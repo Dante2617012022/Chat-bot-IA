@@ -115,6 +115,122 @@ const qrcode = require("qrcode-terminal");
 
 async function manejarMensaje(text, pedido) {
   const lower = text.toLowerCase();
+  // Deriva a humano
+    const palabrasHumano = [
+  "humano", "Humano",
+  "persona", "Persona",
+  "alguien", "Alguien",
+  "asesor", "Asesor",
+  "atendedor", "Atendedor",
+  "atencion humana", "Atencion humana",
+  "atención humana", "Atención humana",
+  "quiero hablar con alguien", "Quiero hablar con alguien",
+  "quiero hablar con una persona", "Quiero hablar con una persona",
+  "quiero un humano", "Quiero un humano",
+  "quiero un asesor", "Quiero un asesor",
+  "necesito un humano", "Necesito un humano",
+  "necesito hablar con alguien", "Necesito hablar con alguien",
+  "quiero un operador", "Quiero un operador",
+  "necesito un operador", "Necesito un operador",
+  "atencion personal", "Atencion personal",
+  "atención personal", "Atención personal"
+];
+// Detecta solicitud de atención humana
+const palabrasHumano = [ ... ];
+if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
+  await sock.sendMessage(sender, {
+    text: "📞 Podés comunicarte con un humano al 3816460291."
+  });
+  return;
+}
+  // Detecta ubicación
+    const palabrasUbicacion = [
+  "ubicacion", "Ubicacion",
+  "ubicación", "Ubicación",
+  "donde estan", "Donde estan",
+  "dónde están", "Dónde están",
+  "direccion", "Direccion",
+  "dirección", "Dirección",
+  "local", "Local", "donde", "Donde",
+  "sucursal", "Sucursal",
+  "donde queda", "Donde queda",
+  "dónde queda", "Dónde queda",
+  "como llego", "Como llego",
+  "cómo llego", "Cómo llego",
+  "ubicados", "Ubicados",
+  "direccion exacta", "Direccion exacta",
+  "ubicacion exacta", "Ubicacion exacta",
+  "ubicación exacta", "Ubicación exacta",
+  "ubicacion del local", "Ubicacion del local",
+  "como ir", "Como ir",
+  "como llego al local", "Como llego al local"
+];
+
+// Detecta ubicación
+    const palabrasUbicacion = [
+  "ubicacion", "Ubicacion",
+  "ubicación", "Ubicación",
+  "donde estan", "Donde estan",
+  "dónde están", "Dónde están",
+  "direccion", "Direccion",
+  "dirección", "Dirección",
+  "local", "Local", "donde", "Donde",
+  "sucursal", "Sucursal",
+  "donde queda", "Donde queda",
+  "dónde queda", "Dónde queda",
+  "como llego", "Como llego",
+  "cómo llego", "Cómo llego",
+  "ubicados", "Ubicados",
+  "direccion exacta", "Direccion exacta",
+  "ubicacion exacta", "Ubicacion exacta",
+  "ubicación exacta", "Ubicación exacta",
+  "ubicacion del local", "Ubicacion del local",
+  "como ir", "Como ir",
+  "como llego al local", "Como llego al local"
+];
+  
+  // Detecta solicitud de menú/carta
+    const palabrasClave = [
+  "menu", "Menu",
+  "menue", "Menue",
+  "menú", "Menú",
+  "carta", "Carta",
+  "catalogo", "Catalogo",
+  "catálogo", "Catálogo",
+  "listado", "Listado",
+  "lista", "Lista",
+  "precios", "Precios",
+  "precio", "Precio",
+  "productos", "Productos",
+  "producto", "Producto",
+  "oferta", "Oferta",
+  "ofertas", "Ofertas",
+  "promocion", "Promocion",
+  "promoción", "Promoción",
+  "promos", "Promos",
+  "opciones", "Opciones",
+  "opcion", "Opcion",
+  "platos", "Platos",
+  "plato", "Plato",
+  "comidas", "Comidas",
+  "bebidas", "Bebidas",
+  "ver menu", "Ver menu",
+  "quiero ver el menu", "Quiero ver el menu",
+  "pasame el menu", "Pasame el menu",
+  "dame el menú", "Dame el menú",
+  "me das el menu por favor", "Me das el menu por favor",
+  "me pasas el menu", "Me pasas el menu", "Me das el menu", "me das el menu","Me das el menu?",
+  "dejame el menú", "Dejame el menú",
+  "dejame el menu", "Dejame el menu",
+  "dejame el menú a mano", "Dejame el menú a mano",
+  "dejame el menu a mano por favor", "Dejame el menu a mano por favor",
+  "dejame el menu a mano porfavor", "Dejame el menu a mano porfavor",
+  "me pasas la carta", "Me pasas la carta",
+  "quiero la carta", "Quiero la carta",
+  "dame el menu", "Dame el menu",
+  "mostrar menu", "Mostrar menu",
+  "mostrar carta", "Mostrar carta"
+];
 
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await procesarConGPT(pedido);
@@ -152,14 +268,97 @@ async function manejarMensaje(text, pedido) {
       return `La ${capitalize(prod)} está $${menu[prod]}. ¿Querés sumar una al pedido?`;
     }
   }
-
+  // Detecta consulta por precios
+    const palabrasPrecios = [
+  "precio", "Precio",
+  "precios", "Precios",
+  "vale", "Vale",
+  "cuanto", "Cuanto",
+  "cuánto", "Cuánto",
+  "valor", "Valor",
+  "cuestan", "Cuestan",
+  "cuesta", "Cuesta",
+  "sale", "Sale",
+  "salen", "Salen",
+  "tarifa", "Tarifa",
+  "importe", "Importe",
+  "que vale", "Que vale",
+  "que cuesta", "Que cuesta",
+  "que sale", "Que sale",
+];
+// Mostrar menú si se detecta una frase relacionada
+  for (const palabra of palabrasClave) {
+    if (lower.includes(palabra.toLowerCase())) {
+      return saludoDinamico(pedido) + `\nTe paso nuestro menú completo 👇\n\n${menuToString()}`;
+    }
+  }
   if (lower.includes("pagar") || lower.includes("link")) {
     const link = await generarLinkPago(pedido);
     pedido.pagado = true;
     return `👉 Te paso el link de pago (Mercado Pago):\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
   }
-
+if (
+  [
+  "vender", "Vender",
+  "hola me podria preparar", "Hola me podria preparar",
+  "hola me podría preparar", "Hola me podría preparar",
+  "hola que tal! me pepara", "Hola que tal! me pepara",
+  "hola que tal! me preparas", "Hola que tal! me preparas",
+  "hola que tal! me podrías preparar", "Hola que tal! me podrías preparar",
+  "hola como va, me podrías preparar", "Hola como va, me podrías preparar",
+  "hola que tal, me podrías preparar", "Hola que tal, me podrías preparar",
+  "hola como va! me podrías preparar", "Hola como va! me podrías preparar",
+  "hola que tal! me podrias preparar", "Hola que tal! me podrias preparar",
+  "me vendes", "Me vendes",
+  "solicito", "Solicito",
+  "te solicito", "Te solicito",
+  "quiero pedir", "Quiero pedir",
+  "pedido", "Pedido",
+  "encargar", "Encargar",
+  "te encargo", "Te encargo",
+  "quisiera pedir", "Quisiera pedir",
+  "me comercializas", "Me comercializas",
+  "te ordeno", "Te ordeno",
+  "me podrias preparar", "Me podrias preparar",
+  "me podrías preparar", "Me podrías preparar",
+  "me podrían preparar", "Me podrían preparar",
+  "me podría preparar", "Me podría preparar",
+  "quiero encargar", "Quiero encargar",
+  "hago un pedido", "Hago un pedido",
+  "me gustaría pedir", "Me gustaría pedir",
+  "necesito pedir", "Necesito pedir",
+  "quisiera encargar", "Quisiera encargar",
+  "voy a pedir", "Voy a pedir",
+  "dame", "Dame",
+  "ordenar", "Ordenar",
+  "orden", "Orden",
+  "pido", "Pido",
+  "quisiera una", "Quisiera una",
+  "quiero una", "Quiero una",
+  "te pido", "Te pido",
+  "me das", "Me das",
+  "quiero comprar", "Quiero comprar",
+  "comerciar", "Comerciar",
+  "me comercias", "Me comercias",
+  "comprar", "Comprar",
+  "me podria preparar porfis", "Me podria preparar porfis",
+  "me podria preparar porfa", "Me podria preparar porfa",
+  "me podria preparar porfavor", "Me podria preparar porfavor",
+  "me podria preparar por favor", "Me podria preparar por favor",
+  "requerir", "Requerir",
+  "requiero", "Requiero",
+  "solicitar", "Solicitar",
+  "tendria para preparar", "Tendria para preparar",
+  "preparame porfavor", "Preparame porfavor",
+  "voy a encargar", "Voy a encargar",
+  "me apetece", "Me apetece",
+  "necesitaria", "Necesitaria",
+  "desearia solicitar", "Desearia solicitar",
+  "desearia pedir", "Desearia pedir",
+  "se me antoja", "Se me antoja"
+];
   if (pedido.items.length === 0 && pedido.interacciones === 1) {
+  
     return saludoDinamico(pedido) + `\nTe paso nuestro menú rápido:\n\n${menuToString()}\nDecime qué se te antoja 😎`;
   } else {
     return `Ups, no logré entender bien. ¿Podrías repetirlo o explicarme mejor? 😊`;
