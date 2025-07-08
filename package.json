@@ -1,0 +1,27 @@
+diff --git a//dev/null b/package.json
+index 0000000000000000000000000000000000000000..a3bce879f159ee4e37da0f03242aa26dae998811 100644
+--- a//dev/null
++++ b/package.json
+@@ -0,0 +1,21 @@
++{
++  "name": "cosasgit",
++  "version": "1.0.0",
++  "description": "",
++  "main": "index.js",
++  "scripts": {
++    "test": "echo \"Error: no test specified\" && exit 1",
++    "start": "node index.js"
++  },
++  "keywords": [],
++  "author": "",
++  "license": "ISC",
++  "type": "commonjs",
++  "dependencies": {
++    "baileys": "^6.7.18",
++    "dotenv": "^17.1.0",
++    "mercadopago": "^2.8.0",
++    "openai": "^5.8.3",
++    "qrcode-terminal": "^0.12.0"
++  }
++}
+
