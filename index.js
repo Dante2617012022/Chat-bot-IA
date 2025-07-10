@@ -1,5 +1,6 @@
 const { default: makeWASocket, useMultiFileAuthState } = require("baileys");
 const OpenAI = require("openai");
+const stringSimilarity = require("string-similarity");
 const fs = require("fs");
 require("dotenv").config();
 
@@ -66,6 +67,19 @@ const menu = {
   "Lata": 1800,
   "1.5l": 3500
 };
+// 👉 Función para buscar el producto más parecido
+function encontrarProductoSimilar(texto) {
+  const productos = Object.keys(menu);
+  const coincidencias = stringSimilarity.findBestMatch(texto, productos);
+  const mejorCoincidencia = coincidencias.bestMatch;
+
+  if (mejorCoincidencia.rating > 0.7) {
+    return mejorCoincidencia.target;
+  } else {
+    console.log(`🔎 Sin coincidencia suficiente para: "${texto}" (score: ${mejorCoincidencia.rating})`);
+    return null;
+  }
+}
 
 let pedidos = [];
 if (fs.existsSync("pedidos.json")) {
@@ -163,10 +177,7 @@ async function manejarMensaje(text, pedido) {
 // Detecta solicitud de atención humana
 
 if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
-  await sock.sendMessage(sender, {
-    text: "📞 Podés comunicarte con un humano al 3816460291."
-  });
-  return;
+  return "📞 Podés comunicarte con un humano al 3816460291.";
 }
   // Detecta ubicación
     const palabrasUbicacion = [
@@ -191,7 +202,10 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "como llego al local", "Como llego al local"
 ];
 
-  
+  if (palabrasUbicacion.some(p => lower.includes(p.toLowerCase()))) {
+    return STORE_ADDRESS || "Ubicación no configurada";
+  }
+
   // Detecta solicitud de menú/carta
     const palabrasClave = [
   "menu", "Menu",
@@ -244,128 +258,60 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
     return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
   }
 
-  if (gptResult.productos.length > 0) {
-    gptResult.productos.forEach(p => {
-      if (menu[p.nombre.toLowerCase()]) {
+if (gptResult.productos.length > 0) {
+  gptResult.productos.forEach(p => {
+    const nombreNormalizado = p.nombre.toLowerCase();
+    const coincidencia = encontrarProductoSimilar(nombreNormalizado);
+    if (coincidencia) {
+      const nombreCapitalizado = capitalize(coincidencia);
+      const precioUnitario = menu[coincidencia];
+      const subtotal = p.cantidad * precioUnitario;
+
+      // 🔄 Revisar si ya existe el producto en el pedido
+      const yaExiste = pedido.items.find(i => i.producto === nombreCapitalizado);
+      if (yaExiste) {
+        yaExiste.cantidad += p.cantidad;
+        yaExiste.subtotal += subtotal;
+      } else {
         pedido.items.push({
-          producto: capitalize(p.nombre),
+          producto: nombreCapitalizado,
           cantidad: p.cantidad,
-          precio_unitario: menu[p.nombre.toLowerCase()],
-          subtotal: p.cantidad * menu[p.nombre.toLowerCase()]
+          precio_unitario: precioUnitario,
+          subtotal
         });
-        pedido.total += p.cantidad * menu[p.nombre.toLowerCase()];
       }
-    });
 
-    let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
-    pedido.items.forEach(i => {
-      resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
-    });
-    resumen += `\n💵 Total: $${pedido.total}\n`;
-    resumen += "¿Querés agregar algo más o generar el link de pago?";
-
-
-}
-  if (gptResult.pregunta_precio) {
-    const prod = gptResult.pregunta_precio.toLowerCase();
-    if (menu[prod]) {
-      return `La ${capitalize(prod)} está $${menu[prod]}. ¿Querés sumar una al pedido?`;
-    }
-  }
-  // Detecta consulta por precios
-    const palabrasPrecios = [
-  "precio", "Precio",
-  "precios", "Precios",
-  "vale", "Vale",
-  "cuanto", "Cuanto",
-  "cuánto", "Cuánto",
-  "valor", "Valor",
-  "cuestan", "Cuestan",
-  "cuesta", "Cuesta",
-  "sale", "Sale",
-  "salen", "Salen",
-  "tarifa", "Tarifa",
-  "importe", "Importe",
-  "que vale", "Que vale",
-  "que cuesta", "Que cuesta",
-  "que sale", "Que sale",
-];
-// Mostrar menú si se detecta una frase relacionada
-  for (const palabra of palabrasClave) {
-    if (lower.includes(palabra.toLowerCase())) {
-      return saludoDinamico(pedido) + `\nTe paso nuestro menú completo 👇\n\n${menuToString()}`;
-    }
-  }
-  if (lower.includes("pagar") || lower.includes("link")) {
-    const link = await generarLinkPago(pedido);
-    pedido.pagado = true;
-    return `👉 Te paso el link de pago (Mercado Pago):\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
-  }
-const palabrasPedido = [
-    "vender", "Vender",
-    "hola me podria preparar", "Hola me podria preparar",
-    "hola me podría preparar", "Hola me podría preparar",
-    "hola que tal! me pepara", "Hola que tal! me pepara",
-    "hola que tal! me preparas", "Hola que tal! me preparas",
-    "hola que tal! me podrías preparar", "Hola que tal! me podrías preparar",
-    "hola como va, me podrías preparar", "Hola como va, me podrías preparar",
-    "hola que tal, me podrías preparar", "Hola que tal, me podrías preparar",
-    "hola como va! me podrías preparar", "Hola como va! me podrías preparar",
-    "hola que tal! me podrias preparar", "Hola que tal! me podrias preparar",
-    "me vendes", "Me vendes",
-    "solicito", "Solicito",
-    "te solicito", "Te solicito",
-    "quiero pedir", "Quiero pedir",
-    "pedido", "Pedido",
-    "encargar", "Encargar",
-    "te encargo", "Te encargo",
-    "quisiera pedir", "Quisiera pedir",
-    "me comercializas", "Me comercializas",
-    "te ordeno", "Te ordeno",
-    "me podrias preparar", "Me podrias preparar",
-    "me podrías preparar", "Me podrías preparar",
-    "me podrían preparar", "Me podrían preparar",
-    "me podría preparar", "Me podría preparar",
-    "quiero encargar", "Quiero encargar",
-    "hago un pedido", "Hago un pedido",
-    "me gustaría pedir", "Me gustaría pedir",
-    "necesito pedir", "Necesito pedir",
-    "quisiera encargar", "Quisiera encargar",
-    "voy a pedir", "Voy a pedir",
-    "dame", "Dame",
-    "ordenar", "Ordenar",
-    "orden", "Orden",
-    "pido", "Pido",
-    "quisiera una", "Quisiera una",
-    "quiero una", "Quiero una",
-    "te pido", "Te pido",
-    "me das", "Me das",
-    "quiero comprar", "Quiero comprar",
-    "comerciar", "Comerciar",
-    "me comercias", "Me comercias",
-    "comprar", "Comprar",
-    "me podria preparar porfis", "Me podria preparar porfis",
-    "me podria preparar porfa", "Me podria preparar porfa",
-    "me podria preparar porfavor", "Me podria preparar porfavor",
-    "me podria preparar por favor", "Me podria preparar por favor",
-    "requerir", "Requerir",
-    "requiero", "Requiero",
-    "solicitar", "Solicitar",
-    "tendria para preparar", "Tendria para preparar",
-    "preparame porfavor", "Preparame porfavor",
-    "voy a encargar", "Voy a encargar",
-    "me apetece", "Me apetece",
-    "necesitaria", "Necesitaria",
-    "desearia solicitar", "Desearia solicitar",
-    "desearia pedir", "Desearia pedir",
-    "se me antoja", "Se me antoja"
-  ];
-  if (palabrasPedido.some(p => lower.includes(p.toLowerCase()))) {
-    if (pedido.items.length === 0 && pedido.interacciones === 1) {
-      return saludoDinamico(pedido) + `\nTe paso nuestro menú rápido:\n\n${menuToString()}\nDecime qué se te antoja 😎`;
+      pedido.total += subtotal;
     } else {
-      return `Ups, no logré entender bien. ¿Podrías repetirlo o explicarme mejor? 😊`;
+      console.log(`❌ No se reconoció el producto: "${p.nombre}"`);
     }
+  });
+
+  let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+  pedido.items.forEach(i => {
+    resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+  });
+  resumen += `\n💵 Total: $${pedido.total}\n`;
+  resumen += "¿Querés agregar algo más o generar el link de pago?";
+  
+  return resumen; // 👈 muy importante: devuelve el mensaje al usuario
+}
+
+
+
+
+
+ // 👉 Detectar si preguntó el precio de un producto
+if (gptResult.pregunta_precio) {
+  const prod = gptResult.pregunta_precio.toLowerCase();
+  const coincidencia = encontrarProductoSimilar(prod);
+  if (coincidencia) {
+    return `💰 La ${capitalize(coincidencia)} cuesta $${menu[coincidencia]}. ¿Querés agregar una al pedido?`;
+  } else {
+    return "🤔 No encontré ese producto. ¿Podés repetirlo?";
+  }
+}
+
   }
 }
 async function procesarConGPT(pedido) {

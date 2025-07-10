@@ -8,7 +8,8 @@ This project is a conversational bot for a burger shop. It integrates with Whats
 - Environment variables configured in a `.env` file:
   - `OPENAI_API_KEY` – your OpenAI API key.
   - `MERCADO_PAGO_ACCESS_TOKEN` – token for Mercado Pago.
-  - `STORE_ADDRESS` – optional store location sent to users asking for our address.
+- `STORE_ADDRESS` – optional store location sent to users asking for our address. When a user writes phrases like "dónde queda" or "cómo llego", the bot replies with this address (or a fallback message if not set).
+
 Install dependencies with:
 
 ```bash
@@ -37,7 +38,7 @@ On startup, a QR code appears in the terminal. Scan it with WhatsApp to connect 
 
 ## Data storage
 
-Orders are saved locally in `pedidos.json`. Each time a user interacts with the bot, their order data is updated in this file.
+Orders are saved locally in `pedidos.json`. The bot creates this file automatically to persist conversations and order details between sessions, and it is ignored by Git so local data does not get committed.
 
 ## Connecting via WhatsApp
 
