@@ -136,7 +136,7 @@ async function manejarMensaje(text, pedido) {
   "atención personal", "Atención personal"
 ];
 // Detecta solicitud de atención humana
-const palabrasHumano = [ ... ];
+
 if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   await sock.sendMessage(sender, {
     text: "📞 Podés comunicarte con un humano al 3816460291."
@@ -166,28 +166,6 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "como llego al local", "Como llego al local"
 ];
 
-// Detecta ubicación
-    const palabrasUbicacion = [
-  "ubicacion", "Ubicacion",
-  "ubicación", "Ubicación",
-  "donde estan", "Donde estan",
-  "dónde están", "Dónde están",
-  "direccion", "Direccion",
-  "dirección", "Dirección",
-  "local", "Local", "donde", "Donde",
-  "sucursal", "Sucursal",
-  "donde queda", "Donde queda",
-  "dónde queda", "Dónde queda",
-  "como llego", "Como llego",
-  "cómo llego", "Cómo llego",
-  "ubicados", "Ubicados",
-  "direccion exacta", "Direccion exacta",
-  "ubicacion exacta", "Ubicacion exacta",
-  "ubicación exacta", "Ubicación exacta",
-  "ubicacion del local", "Ubicacion del local",
-  "como ir", "Como ir",
-  "como llego al local", "Como llego al local"
-];
   
   // Detecta solicitud de menú/carta
     const palabrasClave = [
