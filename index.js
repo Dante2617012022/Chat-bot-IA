@@ -265,6 +265,7 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
     resumen += "¿Querés agregar algo más o generar el link de pago?";
 
 
+}
   if (gptResult.pregunta_precio) {
     const prod = gptResult.pregunta_precio.toLowerCase();
     if (menu[prod]) {
@@ -300,74 +301,73 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
     pedido.pagado = true;
     return `👉 Te paso el link de pago (Mercado Pago):\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
   }
-if (
-  [
-  "vender", "Vender",
-  "hola me podria preparar", "Hola me podria preparar",
-  "hola me podría preparar", "Hola me podría preparar",
-  "hola que tal! me pepara", "Hola que tal! me pepara",
-  "hola que tal! me preparas", "Hola que tal! me preparas",
-  "hola que tal! me podrías preparar", "Hola que tal! me podrías preparar",
-  "hola como va, me podrías preparar", "Hola como va, me podrías preparar",
-  "hola que tal, me podrías preparar", "Hola que tal, me podrías preparar",
-  "hola como va! me podrías preparar", "Hola como va! me podrías preparar",
-  "hola que tal! me podrias preparar", "Hola que tal! me podrias preparar",
-  "me vendes", "Me vendes",
-  "solicito", "Solicito",
-  "te solicito", "Te solicito",
-  "quiero pedir", "Quiero pedir",
-  "pedido", "Pedido",
-  "encargar", "Encargar",
-  "te encargo", "Te encargo",
-  "quisiera pedir", "Quisiera pedir",
-  "me comercializas", "Me comercializas",
-  "te ordeno", "Te ordeno",
-  "me podrias preparar", "Me podrias preparar",
-  "me podrías preparar", "Me podrías preparar",
-  "me podrían preparar", "Me podrían preparar",
-  "me podría preparar", "Me podría preparar",
-  "quiero encargar", "Quiero encargar",
-  "hago un pedido", "Hago un pedido",
-  "me gustaría pedir", "Me gustaría pedir",
-  "necesito pedir", "Necesito pedir",
-  "quisiera encargar", "Quisiera encargar",
-  "voy a pedir", "Voy a pedir",
-  "dame", "Dame",
-  "ordenar", "Ordenar",
-  "orden", "Orden",
-  "pido", "Pido",
-  "quisiera una", "Quisiera una",
-  "quiero una", "Quiero una",
-  "te pido", "Te pido",
-  "me das", "Me das",
-  "quiero comprar", "Quiero comprar",
-  "comerciar", "Comerciar",
-  "me comercias", "Me comercias",
-  "comprar", "Comprar",
-  "me podria preparar porfis", "Me podria preparar porfis",
-  "me podria preparar porfa", "Me podria preparar porfa",
-  "me podria preparar porfavor", "Me podria preparar porfavor",
-  "me podria preparar por favor", "Me podria preparar por favor",
-  "requerir", "Requerir",
-  "requiero", "Requiero",
-  "solicitar", "Solicitar",
-  "tendria para preparar", "Tendria para preparar",
-  "preparame porfavor", "Preparame porfavor",
-  "voy a encargar", "Voy a encargar",
-  "me apetece", "Me apetece",
-  "necesitaria", "Necesitaria",
-  "desearia solicitar", "Desearia solicitar",
-  "desearia pedir", "Desearia pedir",
-  "se me antoja", "Se me antoja"
-];
-  if (pedido.items.length === 0 && pedido.interacciones === 1) {
-  
-    return saludoDinamico(pedido) + `\nTe paso nuestro menú rápido:\n\n${menuToString()}\nDecime qué se te antoja 😎`;
-  } else {
-    return `Ups, no logré entender bien. ¿Podrías repetirlo o explicarme mejor? 😊`;
+const palabrasPedido = [
+    "vender", "Vender",
+    "hola me podria preparar", "Hola me podria preparar",
+    "hola me podría preparar", "Hola me podría preparar",
+    "hola que tal! me pepara", "Hola que tal! me pepara",
+    "hola que tal! me preparas", "Hola que tal! me preparas",
+    "hola que tal! me podrías preparar", "Hola que tal! me podrías preparar",
+    "hola como va, me podrías preparar", "Hola como va, me podrías preparar",
+    "hola que tal, me podrías preparar", "Hola que tal, me podrías preparar",
+    "hola como va! me podrías preparar", "Hola como va! me podrías preparar",
+    "hola que tal! me podrias preparar", "Hola que tal! me podrias preparar",
+    "me vendes", "Me vendes",
+    "solicito", "Solicito",
+    "te solicito", "Te solicito",
+    "quiero pedir", "Quiero pedir",
+    "pedido", "Pedido",
+    "encargar", "Encargar",
+    "te encargo", "Te encargo",
+    "quisiera pedir", "Quisiera pedir",
+    "me comercializas", "Me comercializas",
+    "te ordeno", "Te ordeno",
+    "me podrias preparar", "Me podrias preparar",
+    "me podrías preparar", "Me podrías preparar",
+    "me podrían preparar", "Me podrían preparar",
+    "me podría preparar", "Me podría preparar",
+    "quiero encargar", "Quiero encargar",
+    "hago un pedido", "Hago un pedido",
+    "me gustaría pedir", "Me gustaría pedir",
+    "necesito pedir", "Necesito pedir",
+    "quisiera encargar", "Quisiera encargar",
+    "voy a pedir", "Voy a pedir",
+    "dame", "Dame",
+    "ordenar", "Ordenar",
+    "orden", "Orden",
+    "pido", "Pido",
+    "quisiera una", "Quisiera una",
+    "quiero una", "Quiero una",
+    "te pido", "Te pido",
+    "me das", "Me das",
+    "quiero comprar", "Quiero comprar",
+    "comerciar", "Comerciar",
+    "me comercias", "Me comercias",
+    "comprar", "Comprar",
+    "me podria preparar porfis", "Me podria preparar porfis",
+    "me podria preparar porfa", "Me podria preparar porfa",
+    "me podria preparar porfavor", "Me podria preparar porfavor",
+    "me podria preparar por favor", "Me podria preparar por favor",
+    "requerir", "Requerir",
+    "requiero", "Requiero",
+    "solicitar", "Solicitar",
+    "tendria para preparar", "Tendria para preparar",
+    "preparame porfavor", "Preparame porfavor",
+    "voy a encargar", "Voy a encargar",
+    "me apetece", "Me apetece",
+    "necesitaria", "Necesitaria",
+    "desearia solicitar", "Desearia solicitar",
+    "desearia pedir", "Desearia pedir",
+    "se me antoja", "Se me antoja"
+  ];
+  if (palabrasPedido.some(p => lower.includes(p.toLowerCase()))) {
+    if (pedido.items.length === 0 && pedido.interacciones === 1) {
+      return saludoDinamico(pedido) + `\nTe paso nuestro menú rápido:\n\n${menuToString()}\nDecime qué se te antoja 😎`;
+    } else {
+      return `Ups, no logré entender bien. ¿Podrías repetirlo o explicarme mejor? 😊`;
+    }
   }
 }
-
 async function procesarConGPT(pedido) {
   const historialGPT = [
     { role: "system", content: `

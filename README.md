@@ -1,6 +1,6 @@
 # Burger Bot
 
-This project is a conversational bot for a burger shop. It uses WhatsApp and the OpenAI API to take orders, answer ingredient questions, and act like a helpful employee. The bot supports up to 13 staff members and handles natural, flexible conversations with customers like a real fast‑food assistant.
+This project is a conversational bot for a burger shop. It integrates with WhatsApp and the OpenAI API to take orders, answer ingredient questions, and act like a helpful employee. The bot supports up to 13 staff members and handles natural, flexible conversations with customers like a real fast-food assistant.
 
 ## Prerequisites
 
