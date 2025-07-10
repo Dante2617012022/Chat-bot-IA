@@ -8,7 +8,7 @@ This project is a conversational bot for a burger shop. It integrates with Whats
 - Environment variables configured in a `.env` file:
   - `OPENAI_API_KEY` – your OpenAI API key.
   - `MERCADO_PAGO_ACCESS_TOKEN` – token for Mercado Pago.
-
+  - `STORE_ADDRESS` – optional store location sent to users asking for our address.
 Install dependencies with:
 
 ```bash

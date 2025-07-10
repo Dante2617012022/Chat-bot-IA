@@ -10,7 +10,7 @@ process.on("unhandledRejection", (reason) => {
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
 });
-const { OPENAI_API_KEY, MERCADO_PAGO_ACCESS_TOKEN } = process.env;
+const { OPENAI_API_KEY, MERCADO_PAGO_ACCESS_TOKEN, STORE_ADDRESS } = process.env;
 if (!OPENAI_API_KEY || !MERCADO_PAGO_ACCESS_TOKEN) {
   console.error(
     "Missing OPENAI_API_KEY or MERCADO_PAGO_ACCESS_TOKEN environment variables."
