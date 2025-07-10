@@ -80,7 +80,6 @@ function encontrarProductoSimilar(texto) {
     return null;
   }
 }
-
 let pedidos = [];
 if (fs.existsSync("pedidos.json")) {
 try {
@@ -248,9 +247,20 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "mostrar menu", "Mostrar menu",
   "mostrar carta", "Mostrar carta"
 ];
+if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
+  return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
+}
 
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await procesarConGPT(pedido);
+  
+if (gptResult.ofrecer_menu) {
+  return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
+}
+
+if (gptResult.mostrar_menu) {
+  return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
+}
 
   if (gptResult.cierre_pedido) {
     const link = await generarLinkPago(pedido);
@@ -316,26 +326,34 @@ if (gptResult.pregunta_precio) {
 }
 async function procesarConGPT(pedido) {
   const historialGPT = [
-    { role: "system", content: `
-Sos un asistente de Camdis, una hamburguesería. 
+  { role: "system", content: `
+Sos un asistente de Camdis, una hamburguesería.
+
 Tu tarea es:
 ✅ Armar pedidos a partir de lo que el cliente dice (productos y cantidades).
-✅ Responder preguntas comunes: recomendaciones, ingredientes, picante/no picante, demora estimada.
+✅ Detectar si el cliente pregunta por el precio de algún producto.
 ✅ Detectar si el cliente cierra el pedido (frases como "listo eso es todo", "nada más gracias").
 ✅ Sugerir agregados si el cliente duda.
 ✅ Podés ofrecer ayuda si el cliente parece confundido.
 
-Respondé SOLO en JSON así:
+🧠 Si el cliente recién inicia la conversación con un saludo o algo general, respondé de forma simpática y preguntale si quiere que le muestres el menú. En ese caso devolvé: "ofrecer_menu": true.
+
+✅ Si el cliente responde que sí, devolvé: "mostrar_menu": true.
+
+📦 Formato JSON (respondé **solo esto**):
 {
   "productos": [{"nombre": "...", "cantidad": ...}],
   "pregunta_precio": "...",
-  "cierre_pedido": true/false
+  "cierre_pedido": true/false,
+  "ofrecer_menu": true/false,
+  "mostrar_menu": true/false
 }
 
 Menú válido: ${Object.keys(menu).map(p => capitalize(p)).join(", ")}
 ` },
-    ...pedido.historial.slice(-10)
-  ];
+  ...pedido.historial.slice(-10)
+];
+
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
