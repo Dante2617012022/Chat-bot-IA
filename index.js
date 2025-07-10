@@ -3,11 +3,19 @@ const OpenAI = require("openai");
 const fs = require("fs");
 require("dotenv").config();
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { OPENAI_API_KEY, MERCADO_PAGO_ACCESS_TOKEN } = process.env;
+if (!OPENAI_API_KEY || !MERCADO_PAGO_ACCESS_TOKEN) {
+  console.error(
+    "Missing OPENAI_API_KEY or MERCADO_PAGO_ACCESS_TOKEN environment variables."
+  );
+  process.exit(1);
+}
+
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 const mercadopago = require("mercadopago");
 
 mercadopago.configure({
-  access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
+  access_token: MERCADO_PAGO_ACCESS_TOKEN
 });
 
 const menu = {
