@@ -14,7 +14,17 @@ Install dependencies with:
 ```bash
 npm install
 ```
+### Mercado Pago setup
 
+Initialize the Mercado Pago client using the new SDK API:
+
+```javascript
+const { MercadoPagoConfig, Preference } = require('mercadopago');
+const mpClient = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+const preferenceClient = new Preference(mpClient);
+```
+
+`preferenceClient` is later used to create payment links.
 ## Starting the bot
 
 Run the bot with:

@@ -19,12 +19,12 @@ if (!OPENAI_API_KEY || !MERCADO_PAGO_ACCESS_TOKEN) {
 }
 
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
-const mercadopago = require("mercadopago");
+const { MercadoPagoConfig, Preference } = require("mercadopago");
 
-mercadopago.configure({
-  access_token: MERCADO_PAGO_ACCESS_TOKEN
+const mpClient = new MercadoPagoConfig({
+  accessToken: MERCADO_PAGO_ACCESS_TOKEN
 });
-
+const preferenceClient = new Preference(mpClient);
 const menu = {
   "Cheeseburger simple": 8000,
   "Cheeseburger doble": 9500,
@@ -414,8 +414,8 @@ async function generarLinkPago(pedido) {
   };
 
 try {
-    const mp = await mercadopago.preferences.create(preference);
-    return mp.body.init_point;
+    const mp = await preferenceClient.create({ body: preference });
+    return mp.init_point;
   } catch (err) {
     console.error("Error creating MercadoPago preference:", err);
     throw err;
