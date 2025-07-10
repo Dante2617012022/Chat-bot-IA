@@ -3,6 +3,13 @@ const OpenAI = require("openai");
 const fs = require("fs");
 require("dotenv").config();
 
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
 const { OPENAI_API_KEY, MERCADO_PAGO_ACCESS_TOKEN } = process.env;
 if (!OPENAI_API_KEY || !MERCADO_PAGO_ACCESS_TOKEN) {
   console.error(
@@ -62,7 +69,13 @@ const menu = {
 
 let pedidos = [];
 if (fs.existsSync("pedidos.json")) {
-  pedidos = JSON.parse(fs.readFileSync("pedidos.json"));
+try {
+    const data = fs.readFileSync("pedidos.json");
+    pedidos = JSON.parse(data);
+  } catch (err) {
+    console.error("Error reading pedidos.json:", err);
+    pedidos = [];
+  }
 }
 
 async function startBot() {
@@ -115,7 +128,11 @@ const qrcode = require("qrcode-terminal");
     pedidos = pedidos.filter(p => p.cliente !== sender || p.pagado);
     pedidos.push(pedido);
 
-    fs.writeFileSync("pedidos.json", JSON.stringify(pedidos, null, 2));
+ try {
+      fs.writeFileSync("pedidos.json", JSON.stringify(pedidos, null, 2));
+    } catch (err) {
+      console.error("Error writing pedidos.json:", err);
+    }
 
     await sock.sendMessage(sender, { text: respuesta });
   });
@@ -396,8 +413,13 @@ async function generarLinkPago(pedido) {
     }))
   };
 
-  const mp = await mercadopago.preferences.create(preference);
-  return mp.body.init_point;
+try {
+    const mp = await mercadopago.preferences.create(preference);
+    return mp.body.init_point;
+  } catch (err) {
+    console.error("Error creating MercadoPago preference:", err);
+    throw err;
+  }
 }
 
 function saludoDinamico(pedido) {
