@@ -323,7 +323,6 @@ if (gptResult.pregunta_precio) {
 }
 
   }
-}
 async function procesarConGPT(pedido) {
   const historialGPT = [
   { role: "system", content: `
