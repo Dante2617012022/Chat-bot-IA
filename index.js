@@ -252,7 +252,7 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
 }
 
   // Detectar intención con GPT-4o usando memoria
-  const gptResult = await procesarConGPT(pedido);
+  const gptResult = await module.exports.procesarConGPT(pedido);
   
 if (gptResult.ofrecer_menu) {
   return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
@@ -267,15 +267,27 @@ if (gptResult.mostrar_menu) {
     pedido.pagado = true;
     return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
   }
+// 👉 Detectar si preguntó el precio de un producto
+if (gptResult.pregunta_precio) {
+  const prod = gptResult.pregunta_precio.toLowerCase();
+  const coincidencia = encontrarProductoSimilar(prod);
+  if (coincidencia) {
+    return `💰 La ${capitalize(coincidencia)} cuesta $${menu[coincidencia]}. ¿Querés agregar una al pedido?`;
+  } else {
+    return "🤔 No encontré ese producto. ¿Podés repetirlo?";
+  }
+}
+let cambios = false;
 
-if (gptResult.productos.length > 0) {
-  gptResult.productos.forEach(p => {
-    const nombreNormalizado = p.nombre.toLowerCase();
-    const coincidencia = encontrarProductoSimilar(nombreNormalizado);
-    if (coincidencia) {
-      const nombreCapitalizado = capitalize(coincidencia);
-      const precioUnitario = menu[coincidencia];
-      const subtotal = p.cantidad * precioUnitario;
+  if (gptResult.productos.length > 0) {
+    cambios = true;
+    gptResult.productos.forEach(p => {
+      const nombreNormalizado = p.nombre.toLowerCase();
+      const coincidencia = encontrarProductoSimilar(nombreNormalizado);
+      if (coincidencia) {
+        const nombreCapitalizado = capitalize(coincidencia);
+        const precioUnitario = menu[coincidencia];
+        const subtotal = p.cantidad * precioUnitario;
 
       // 🔄 Revisar si ya existe el producto en el pedido
       const yaExiste = pedido.items.find(i => i.producto === nombreCapitalizado);
@@ -295,35 +307,52 @@ if (gptResult.productos.length > 0) {
     } else {
       console.log(`❌ No se reconoció el producto: "${p.nombre}"`);
     }
-  });
-
-  let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
-  pedido.items.forEach(i => {
-    resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
-  });
-  resumen += `\n💵 Total: $${pedido.total}\n`;
-  resumen += "¿Querés agregar algo más o generar el link de pago?";
-  
-  return resumen; // 👈 muy importante: devuelve el mensaje al usuario
-}
-
-
-
-
-
- // 👉 Detectar si preguntó el precio de un producto
-if (gptResult.pregunta_precio) {
-  const prod = gptResult.pregunta_precio.toLowerCase();
-  const coincidencia = encontrarProductoSimilar(prod);
-  if (coincidencia) {
-    return `💰 La ${capitalize(coincidencia)} cuesta $${menu[coincidencia]}. ¿Querés agregar una al pedido?`;
-  } else {
-    return "🤔 No encontré ese producto. ¿Podés repetirlo?";
+    });
   }
-}
+  if (gptResult.eliminar_productos && gptResult.eliminar_productos.length > 0) {
+    cambios = true;
+    gptResult.eliminar_productos.forEach(p => {
+      if (!p) return;
+      const nombreNormalizado = (p.nombre || p).toString().toLowerCase();
+      const cantidadEliminar = p.cantidad;
+      const coincidencia = encontrarProductoSimilar(nombreNormalizado);
+      if (coincidencia) {
+        const nombreCapitalizado = capitalize(coincidencia);
+        const idx = pedido.items.findIndex(i => i.producto === nombreCapitalizado);
+        if (idx !== -1) {
+          const item = pedido.items[idx];
+          const quitar = cantidadEliminar ? Math.min(cantidadEliminar, item.cantidad) : item.cantidad;
+          item.cantidad -= quitar;
+          const resta = quitar * item.precio_unitario;
+          item.subtotal -= resta;
+          pedido.total -= resta;
+          if (item.cantidad <= 0) {
+            pedido.items.splice(idx, 1);
+          }
+        }
+      }
+    });
+  }
+
+  if (cambios) {
+    let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+    pedido.items.forEach(i => {
+      resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+    });
+    resumen += `\n💵 Total: $${pedido.total}\n`;
+    resumen += "¿Querés agregar algo más o generar el link de pago?";
+
+    return resumen; // 👈 muy importante: devuelve el mensaje al usuario
+  }
+
+
+
+
+
+
 
   }
-async function procesarConGPT(pedido) {
+let procesarConGPT = async function(pedido) {
   const historialGPT = [
   { role: "system", content: `
 Sos un asistente de Camdis, una hamburguesería.
@@ -334,6 +363,7 @@ Tu tarea es:
 ✅ Detectar si el cliente cierra el pedido (frases como "listo eso es todo", "nada más gracias").
 ✅ Sugerir agregados si el cliente duda.
 ✅ Podés ofrecer ayuda si el cliente parece confundido.
+✅ Detectar si el cliente quiere *quitar* o *eliminar* productos del pedido y listarlos en "eliminar_productos".
 
 🧠 Si el cliente recién inicia la conversación con un saludo o algo general, respondé de forma simpática y preguntale si quiere que le muestres el menú. En ese caso devolvé: "ofrecer_menu": true.
 
@@ -345,7 +375,8 @@ Tu tarea es:
   "pregunta_precio": "...",
   "cierre_pedido": true/false,
   "ofrecer_menu": true/false,
-  "mostrar_menu": true/false
+  "mostrar_menu": true/false,
+  "eliminar_productos": [{"nombre": "...", "cantidad": ...}]
 }
 
 Menú válido: ${Object.keys(menu).map(p => capitalize(p)).join(", ")}
@@ -363,7 +394,7 @@ Menú válido: ${Object.keys(menu).map(p => capitalize(p)).join(", ")}
     const json = JSON.parse(completion.choices[0].message.content.trim());
     return json;
   } catch {
-    return { productos: [], pregunta_precio: null, cierre_pedido: false };
+ return { productos: [], pregunta_precio: null, cierre_pedido: false, ofrecer_menu: false, mostrar_menu: false, eliminar_productos: [] };
   }
 }
 
@@ -410,5 +441,9 @@ function capitalize(str) {
   return str.replace(/\b\w/g, c => c.toUpperCase());
 }
 
-startBot();
+if (require.main === module) {
+  startBot();
+} else {
+  module.exports = { manejarMensaje, procesarConGPT, menu };
+}
 
