@@ -250,7 +250,31 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
 if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
 }
-
+const todoMenos = lower.match(/todo\s+menos\s+(.+)/i);
+  if (todoMenos) {
+    const filtro = todoMenos[1].replace(/[.!?,;]+$/, '').trim();
+    const keepTerm = (encontrarProductoSimilar(filtro) || filtro).toLowerCase();
+    let cambios = false;
+    pedido.items = pedido.items.filter(i => {
+      const nombre = i.producto.toLowerCase();
+      const keep = nombre.includes(keepTerm) ||
+                   stringSimilarity.compareTwoStrings(nombre, keepTerm) > 0.4;
+      if (!keep) {
+        pedido.total -= i.subtotal;
+        cambios = true;
+      }
+      return keep;
+    });
+    if (cambios) {
+      let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+      pedido.items.forEach(i => {
+        resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+      });
+      resumen += `\n💵 Total: $${pedido.total}\n`;
+      resumen += "¿Querés agregar algo más o generar el link de pago?";
+      return resumen;
+    }
+  }
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await module.exports.procesarConGPT(pedido);
   
@@ -443,7 +467,6 @@ function capitalize(str) {
 
 if (require.main === module) {
   startBot();
-} else {
-  module.exports = { manejarMensaje, procesarConGPT, menu };
 }
+module.exports = { manejarMensaje, procesarConGPT, menu };
 

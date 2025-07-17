@@ -3,14 +3,14 @@ process.env.OPENAI_API_KEY = 'test';
 process.env.MERCADO_PAGO_ACCESS_TOKEN = 'test';
 const bot = require('./index');
 
-// Mock GPT response to remove Bacon cheese doble
+// Mock GPT with no special actions
 bot.procesarConGPT = async () => ({
   productos: [],
   pregunta_precio: null,
   cierre_pedido: false,
   ofrecer_menu: false,
   mostrar_menu: false,
-  eliminar_productos: [{ nombre: 'bacon cheese doble' }]
+  eliminar_productos: []
 });
 
 const menu = bot.menu;
