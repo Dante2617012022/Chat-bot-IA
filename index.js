@@ -142,7 +142,11 @@ const qrcode = require("qrcode-terminal");
     pedido.interacciones++;
     pedido.historial.push({ role: "user", content: text });
 
-    const respuesta = await manejarMensaje(text, pedido);
+let respuesta = await manejarMensaje(text, pedido);
+    if (typeof respuesta !== "string" || respuesta.trim() === "") {
+      respuesta = "No entendí, ¿podés repetirlo?";
+    }
+
 
     pedido.historial.push({ role: "assistant", content: respuesta });
 
