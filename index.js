@@ -283,6 +283,21 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
       return resumen;
     }
   }
+  // Detectar "borra todo" para vaciar el pedido
+  const borrarTodo = /\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+todo\b/i;
+  if (borrarTodo.test(lower) && !/todo\s+menos/i.test(lower)) {
+    pedido.items = [];
+    pedido.total = 0;
+    let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+    pedido.items.forEach(i => {
+      resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+    });
+    resumen += `\n💵 Total: $${pedido.total}\n`;
+    resumen += "¿Querés agregar algo más o generar el link de pago?";
+    return resumen;
+  }
+  
+  
   // Detectar frases como "borra", "elimina", "saca" o "quita" seguidas de un producto
   const borrarMatch = text.match(/\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+(.+)/i);
   if (borrarMatch) {
