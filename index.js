@@ -67,13 +67,21 @@ const menu = {
   "Lata": 1800,
   "1.5l": 3500
 };
+// 👉 Función para remover artículos comunes
+function removerArticulos(texto) {
+  return texto
+    .split(/\s+/)
+    .filter(t => !["el", "la", "los", "las", "un", "una", "unos", "unas"].includes(t))
+    .join(" ");
+}
 // 👉 Función para buscar el producto más parecido
 function encontrarProductoSimilar(texto) {
   const productos = Object.keys(menu);
-  const coincidencias = stringSimilarity.findBestMatch(texto, productos);
+const consulta = removerArticulos(texto.toLowerCase());
+  const coincidencias = stringSimilarity.findBestMatch(consulta, productos);
   const mejorCoincidencia = coincidencias.bestMatch;
 
-  if (mejorCoincidencia.rating > 0.7) {
+  if (mejorCoincidencia.rating > 0.6) {
     return mejorCoincidencia.target;
   } else {
     console.log(`🔎 Sin coincidencia suficiente para: "${texto}" (score: ${mejorCoincidencia.rating})`);
@@ -250,7 +258,7 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
 if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
 }
-const todoMenos = lower.match(/todo\s+menos\s+(.+)/i);
+  const todoMenos = lower.match(/todo\s+menos\s+(.+)/i);
   if (todoMenos) {
     const filtro = todoMenos[1].replace(/[.!?,;]+$/, '').trim();
     const keepTerm = (encontrarProductoSimilar(filtro) || filtro).toLowerCase();
@@ -275,6 +283,47 @@ const todoMenos = lower.match(/todo\s+menos\s+(.+)/i);
       return resumen;
     }
   }
+  // Detectar frases como "borra", "elimina" o "quita" seguidas de un producto
+  const borrarMatch = text.match(/\b(?:borra|elimina|quita)\s+(.+)/i);
+  if (borrarMatch) {
+    let prodTexto = borrarMatch[1].replace(/[.!?,;]+$/, '').trim();
+    prodTexto = prodTexto.replace(/^(?:la|las|el|los)\s+/i, '');
+    let cantidadEliminar = null;
+    const cantMatch = prodTexto.match(/^(\d+)\s+(.+)/);
+    if (cantMatch) {
+      cantidadEliminar = parseInt(cantMatch[1], 10);
+      prodTexto = cantMatch[2];
+    }
+    let coincidencia = encontrarProductoSimilar(prodTexto.toLowerCase());
+    if (!coincidencia) {
+      const prodLower = prodTexto.toLowerCase();
+      coincidencia = Object.keys(menu).find(p => p.toLowerCase().includes(prodLower));
+    }
+    if (coincidencia) {
+      const nombreCapitalizado = capitalize(coincidencia);
+      const idx = pedido.items.findIndex(i => i.producto.toLowerCase() === coincidencia.toLowerCase() ||
+                                             i.producto.toLowerCase() === nombreCapitalizado.toLowerCase());
+      if (idx !== -1) {
+        const item = pedido.items[idx];
+        const quitar = cantidadEliminar ? Math.min(cantidadEliminar, item.cantidad) : item.cantidad;
+        item.cantidad -= quitar;
+        const resta = quitar * item.precio_unitario;
+        item.subtotal -= resta;
+        pedido.total -= resta;
+        if (item.cantidad <= 0) {
+          pedido.items.splice(idx, 1);
+        }
+        let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+        pedido.items.forEach(i => {
+          resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+        });
+        resumen += `\n💵 Total: $${pedido.total}\n`;
+        resumen += "¿Querés agregar algo más o generar el link de pago?";
+        return resumen;
+      }
+    }
+  }
+  
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await module.exports.procesarConGPT(pedido);
   
