@@ -283,8 +283,8 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
       return resumen;
     }
   }
-  // Detectar frases como "borra", "elimina" o "quita" seguidas de un producto
-  const borrarMatch = text.match(/\b(?:borra|elimina|quita)\s+(.+)/i);
+  // Detectar frases como "borra", "elimina", "saca" o "quita" seguidas de un producto
+  const borrarMatch = text.match(/\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+(.+)/i);
   if (borrarMatch) {
     let prodTexto = borrarMatch[1].replace(/[.!?,;]+$/, '').trim();
     prodTexto = prodTexto.replace(/^(?:la|las|el|los)\s+/i, '');
@@ -323,7 +323,44 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
       }
     }
   }
-  
+  // Detectar frases como "agrega" o "sumale" seguidas de un producto
+  const agregarMatch = text.match(/\b(?:agrega(?:r|me|le)?|sumale?|añade|anade|pon(?:e|me|le)?|adiciona)\s+(\d+)?\s*(.+)/i);
+  if (agregarMatch) {
+    const cantidad = agregarMatch[1] ? parseInt(agregarMatch[1], 10) : 1;
+    let prodTexto = agregarMatch[2].replace(/[.!?,;]+$/, '').trim();
+    prodTexto = prodTexto.replace(/^(?:la|las|el|los|un|una|unos|unas)\s+/i, '');
+    let coincidencia = encontrarProductoSimilar(prodTexto.toLowerCase());
+    if (!coincidencia) {
+      const prodLower = prodTexto.toLowerCase();
+      coincidencia = Object.keys(menu).find(p => p.toLowerCase().includes(prodLower));
+    }
+    if (coincidencia) {
+      const nombreCapitalizado = capitalize(coincidencia);
+      const precioUnitario = menu[coincidencia];
+      const subtotal = cantidad * precioUnitario;
+      const existente = pedido.items.find(i => i.producto.toLowerCase() === coincidencia.toLowerCase() ||
+                                 i.producto.toLowerCase() === nombreCapitalizado.toLowerCase());
+      if (existente) {
+        existente.cantidad += cantidad;
+        existente.subtotal += subtotal;
+      } else {
+        pedido.items.push({
+          producto: nombreCapitalizado,
+          cantidad,
+          precio_unitario: precioUnitario,
+          subtotal
+        });
+      }
+      pedido.total += subtotal;
+      let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+      pedido.items.forEach(i => {
+        resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+      });
+      resumen += `\n💵 Total: $${pedido.total}\n`;
+      resumen += "¿Querés agregar algo más o generar el link de pago?";
+      return resumen;
+    }
+  }
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await module.exports.procesarConGPT(pedido);
   
