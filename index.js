@@ -309,9 +309,23 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
       cantidadEliminar = parseInt(cantMatch[1], 10);
       prodTexto = cantMatch[2];
     }
-    let coincidencia = encontrarProductoSimilar(prodTexto.toLowerCase());
+const prodLower = prodTexto.toLowerCase();
+    let coincidencia = null;
+    const matches = pedido.items.filter(i => {
+      const nombre = i.producto.toLowerCase();
+      return nombre.includes(prodLower) ||
+             stringSimilarity.compareTwoStrings(nombre, prodLower) > 0.4;
+    });
+    if (matches.length === 1) {
+      coincidencia = matches[0].producto;
+    } else if (matches.length > 1) {
+      const opciones = matches.map(m => m.producto).join(', ');
+      return `🤔 Encontré varios productos en tu pedido que coinciden: ${opciones}. ¿Cuál querés eliminar exactamente?`;
+    }
     if (!coincidencia) {
-      const prodLower = prodTexto.toLowerCase();
+      coincidencia = encontrarProductoSimilar(prodLower);
+    }
+    if (!coincidencia) {
       coincidencia = Object.keys(menu).find(p => p.toLowerCase().includes(prodLower));
     }
     if (coincidencia) {

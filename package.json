@@ -4,7 +4,7 @@
   "description": "Burger Bot",
   "main": "index.js",
   "scripts": {
-    "test": "node test-removal.js && node test-addremove.js && node test-workflow.js",
+    "test": "node test-removal.js && node test-addremove.js && node test-workflow.js && node test-multiplematch.js",
     "start": "node index.js"
   },
   "keywords": [],
