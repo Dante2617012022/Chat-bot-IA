@@ -45,6 +45,18 @@ async function run() {
   assert.strictEqual(pedido.items.length, 0);
   assert.strictEqual(pedido.total, 0);
 
+await bot.manejarMensaje('agrega 1 onion simple', pedido);
+  assert.strictEqual(pedido.items.length, 1);
+  let resp = await bot.manejarMensaje('nuevo pedido', pedido);
+  assert.strictEqual(pedido.items.length, 0);
+  assert.strictEqual(pedido.total, 0);
+  assert(/nuevo pedido|reinici/.test(resp.toLowerCase()));
+
+  await bot.manejarMensaje('agrega 1 bacon cheese doble', pedido);
+  resp = await bot.manejarMensaje('cancelar todo', pedido);
+  assert.strictEqual(pedido.items.length, 0);
+  assert.strictEqual(pedido.total, 0);
+  assert(/nuevo pedido|reinici/.test(resp.toLowerCase()));
   console.log('Workflow tests passed');
 }
 

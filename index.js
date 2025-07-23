@@ -287,6 +287,13 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
       return resumen;
     }
   }
+  // Detectar frases para reiniciar el pedido
+  const reiniciar = /\b(?:nuevo\s+pedido|cancelar\s+todo|reiniciar\s+pedido|cancelar\s+pedido)\b/i;
+  if (reiniciar.test(lower)) {
+    pedido.items = [];
+    pedido.total = 0;
+    return "Listo, empezamos un nuevo pedido. ¿Qué te gustaría pedir?";
+  }
   // Detectar "borra todo" para vaciar el pedido
   const borrarTodo = /\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+todo\b/i;
   if (borrarTodo.test(lower) && !/todo\s+menos/i.test(lower)) {
