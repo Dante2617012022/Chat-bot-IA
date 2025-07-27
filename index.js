@@ -67,6 +67,22 @@ const menu = {
   "Lata": 1800,
   "1.5l": 3500
 };
+
+const frasesEliminarTodo = [
+  "borrá todo", "borra todo", "anulá todo", "anula todo", "cancelá el pedido", 
+  "cancelar todo", "nuevo pedido", "empezá de nuevo", "resetear pedido", "reiniciar"
+];
+
+const frasesSolicitarPago = [
+  "quiero pagar", "pasame el link", "mandame el link", "generá el link", 
+  "cobrámelo", "cobrame", "pagar", "link de pago"
+];
+
+const frasesEliminarParcial = [
+  "sacá", "saca", "restale", "quitá", "quita", "eliminá", "elimina", 
+  "dejame", "dejá", "dejá solo", "dejá solamente", "dejame solo"
+];
+
 // 👉 Función para remover artículos comunes
 function removerArticulos(texto) {
   return texto
@@ -87,6 +103,71 @@ const consulta = removerArticulos(texto.toLowerCase());
     console.log(`🔎 Sin coincidencia suficiente para: "${texto}" (score: ${mejorCoincidencia.rating})`);
     return null;
   }
+  // Verbos que disparan eliminación
+const VERBOS_ELIMINAR = [
+  "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale"
+];
+
+// Separadores de productos
+const SEP_PRODUCTOS = /\s*(?:,| y | e )\s*/i;
+
+/**
+ * Parsea una frase que contenga una intención de ELIMINAR varios productos.
+ * Devuelve: [{ nombre: "Americana 2.0 Doble", cantidad: 2|null }, ...]
+ */
+function parseEliminarMultiple(lower) {
+  const regexVerbos = new RegExp(`\\b(${VERBOS_ELIMINAR.join("|")})\\b\\s+(.+)`, "i");
+  const m = lower.match(regexVerbos);
+  if (!m) return null;
+
+  const cola = m[2].trim();
+  const partes = cola.split(SEP_PRODUCTOS).map(s => s.trim()).filter(Boolean);
+
+  const eliminaciones = partes.map(p => {
+    const mm = p.match(/^(\d+)\s+(.+)$/);
+    if (mm) {
+      return { cantidad: parseInt(mm[1], 10), nombre: mm[2].trim() };
+    }
+    return { cantidad: null, nombre: p };
+  });
+
+  return eliminaciones;
+}
+
+/**
+ * Aplica una lista de eliminaciones al pedido.
+ */
+function aplicarEliminacionesMultiples(pedido, eliminaciones) {
+  let huboCambios = false;
+
+  eliminaciones.forEach(({ nombre, cantidad }) => {
+    const match = encontrarProductoSimilar(nombre)
+      ?? Object.keys(menu).find(p => p.toLowerCase().includes(nombre.toLowerCase()));
+
+    if (!match) return;
+
+    const nombreCapitalizado = capitalize(match);
+    const idx = pedido.items.findIndex(i => i.producto.toLowerCase() === match.toLowerCase());
+    if (idx === -1) return;
+
+    const item = pedido.items[idx];
+    const quitar = cantidad ? Math.min(cantidad, item.cantidad) : item.cantidad;
+
+    if (quitar > 0) {
+      item.cantidad -= quitar;
+      const resta = quitar * item.precio_unitario;
+      item.subtotal -= resta;
+      pedido.total -= resta;
+      if (item.cantidad <= 0) {
+        pedido.items.splice(idx, 1);
+      }
+      huboCambios = true;
+    }
+  });
+
+  return huboCambios;
+}
+
 }
 let pedidos = [];
 if (fs.existsSync("pedidos.json")) {
@@ -295,8 +376,12 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
     return "Listo, empezamos un nuevo pedido. ¿Qué te gustaría pedir?";
   }
   // Detectar "borra todo" para vaciar el pedido
-  const borrarTodo = /\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove|anula(?:r)?)\s+todo\b/i;
-  if (borrarTodo.test(lower) && !/todo\s+menos/i.test(lower)) {
+if (frasesEliminarTodo.some(f => lower.includes(f)) && !/todo\s+menos/i.test(lower)) {
+  pedido.items = [];
+  pedido.total = 0;
+  yaSeRespondio = true;
+  return mostrarPedido(pedido);
+}
     pedido.items = [];
     pedido.total = 0;
     let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
@@ -401,9 +486,75 @@ const prodLower = prodTexto.toLowerCase();
       return resumen;
     }
   }
+  if (frasesSolicitarPago.some(f => lower.includes(f))) {
+  yaSeRespondido = true;
+  const link = await generarLinkPago(pedido); // o `generarLinkDePago(pedido, sender, sock)` si usás el socket
+  pedido.pagado = true;
+  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+}
+const matchEliminarParcial = lower.match(/(?:sacá|saca|restale|quitá|quita|eliminá|elimina|dejame|dejá solo|dejá|dejame solo)\s+(\d+)\s+(.*)/i);
+if (matchEliminarParcial) {
+  const cantidad = parseInt(matchEliminarParcial[1]);
+  const nombreProducto = matchEliminarParcial[2];
+  const productoEncontrado = encontrarProductoSimilar(nombreProducto, pedido.items.map(i => i.producto));
+
+  if (productoEncontrado) {
+    const item = pedido.items.find(i => i.producto === productoEncontrado);
+    if (item) {
+      item.cantidad -= cantidad;
+      if (item.cantidad <= 0) {
+        pedido.items = pedido.items.filter(i => i.producto !== productoEncontrado);
+      } else {
+        item.subtotal = item.cantidad * item.precio_unitario;
+      }
+      pedido.total = pedido.items.reduce((sum, i) => sum + i.subtotal, 0);
+      yaSeRespondio = true;
+      return mostrarPedido(pedido);
+    }
+  }
+}
+
+const matchRestar = lower.match(/(restale|sacá|quitá|dejame|dejá solo)\s+(\d+)\s+(.*)/);
+if (matchRestar) {
+  const cantidad = parseInt(matchRestar[2]);
+  const nombreProducto = matchRestar[3];
+  const productoEncontrado = encontrarProductoSimilar(nombreProducto, pedido.items.map(i => i.producto));
+
+  if (productoEncontrado) {
+    const item = pedido.items.find(i => i.producto === productoEncontrado);
+    if (item) {
+      item.cantidad -= cantidad;
+      if (item.cantidad <= 0) {
+        pedido.items = pedido.items.filter(i => i.producto !== productoEncontrado);
+      } else {
+        item.subtotal = item.cantidad * item.precio_unitario;
+      }
+      pedido.total = pedido.items.reduce((sum, i) => sum + i.subtotal, 0);
+      yaSeRespondio = true;
+      return mostrarPedido(pedido);
+    }
+  }
+}
+// 👇 Detección múltiple de eliminación: “sacá nuggets y papas”, “restale 2 americanas y 1 onion”
+const eliminacionesMultiples = parseEliminarMultiple(lower);
+if (eliminacionesMultiples && eliminacionesMultiples.length > 0) {
+  const huboCambios = aplicarEliminacionesMultiples(pedido, eliminacionesMultiples);
+  if (huboCambios) {
+    yaSeRespondio = true;
+    return mostrarPedido(pedido); // o tu bloque que arma el resumen
+  }
+}
+
+
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await module.exports.procesarConGPT(pedido);
-  
+  // Detectar intención de pagar con GPT
+if (gptResult.intencion_pagar === true) {
+  yaSeRespondio = true;
+  const link = await generarLinkPago(pedido);
+  pedido.pagado = true;
+  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+}
 if (gptResult.ofrecer_menu) {
   return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
 }
@@ -431,19 +582,27 @@ let cambios = false;
 
   if (gptResult.productos.length > 0) {
     cambios = true;
-    gptResult.productos.forEach(p => {
-      const nombreNormalizado = p.nombre.toLowerCase();
-      const coincidencia = encontrarProductoSimilar(nombreNormalizado);
-      if (coincidencia) {
-        const nombreCapitalizado = capitalize(coincidencia);
-        const precioUnitario = menu[coincidencia];
-        const subtotal = p.cantidad * precioUnitario;
+   
+if (gptResult.productos.length > 0) {
+  cambios = true;
+  gptResult.productos.forEach(p => {
+    const nombreNormalizado = p.nombre.toLowerCase();
+    const coincidencia = encontrarProductoSimilar(nombreNormalizado);
+    if (!coincidencia) {
+      console.log(`❌ No se reconoció el producto: "${p.nombre}"`);
+      return;
+    }
 
-      // 🔄 Revisar si ya existe el producto en el pedido
-      const yaExiste = pedido.items.find(i => i.producto === nombreCapitalizado);
-      if (yaExiste) {
-        yaExiste.cantidad += p.cantidad;
-        yaExiste.subtotal += subtotal;
+    const nombreCapitalizado = capitalize(coincidencia);
+    const precioUnitario = menu[coincidencia];
+
+    if (p.cantidad > 0) {
+      // ✅ Agregar productos
+      const subtotal = p.cantidad * precioUnitario;
+      const existente = pedido.items.find(i => i.producto === nombreCapitalizado);
+      if (existente) {
+        existente.cantidad += p.cantidad;
+        existente.subtotal += subtotal;
       } else {
         pedido.items.push({
           producto: nombreCapitalizado,
@@ -452,37 +611,24 @@ let cambios = false;
           subtotal
         });
       }
-
       pedido.total += subtotal;
-    } else {
-      console.log(`❌ No se reconoció el producto: "${p.nombre}"`);
-    }
-    });
-  }
-  if (gptResult.eliminar_productos && gptResult.eliminar_productos.length > 0) {
-    cambios = true;
-    gptResult.eliminar_productos.forEach(p => {
-      if (!p) return;
-      const nombreNormalizado = (p.nombre || p).toString().toLowerCase();
-      const cantidadEliminar = p.cantidad;
-      const coincidencia = encontrarProductoSimilar(nombreNormalizado);
-      if (coincidencia) {
-        const nombreCapitalizado = capitalize(coincidencia);
-        const idx = pedido.items.findIndex(i => i.producto === nombreCapitalizado);
-        if (idx !== -1) {
-          const item = pedido.items[idx];
-          const quitar = cantidadEliminar ? Math.min(cantidadEliminar, item.cantidad) : item.cantidad;
-          item.cantidad -= quitar;
-          const resta = quitar * item.precio_unitario;
-          item.subtotal -= resta;
-          pedido.total -= resta;
-          if (item.cantidad <= 0) {
-            pedido.items.splice(idx, 1);
-          }
+    } else if (p.cantidad < 0) {
+      // 🔻 Eliminar productos (cantidad negativa)
+      const existente = pedido.items.find(i => i.producto === nombreCapitalizado);
+      if (existente) {
+        const quitar = Math.min(Math.abs(p.cantidad), existente.cantidad);
+        existente.cantidad -= quitar;
+        const resta = quitar * existente.precio_unitario;
+        existente.subtotal -= resta;
+        pedido.total -= resta;
+        if (existente.cantidad <= 0) {
+          pedido.items = pedido.items.filter(i => i.producto !== nombreCapitalizado);
         }
       }
-    });
-  }
+    }
+  });
+}
+
 
   if (cambios) {
     let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
@@ -497,40 +643,45 @@ let cambios = false;
 
 
 
-
-
-
-
   }
 let procesarConGPT = async function(pedido) {
   const historialGPT = [
   { role: "system", content: `
-Sos un asistente de Camdis, una hamburguesería.
+Sos un asistente inteligente de Camdis, una hamburguesería.
 
-Tu tarea es:
-✅ Armar pedidos a partir de lo que el cliente dice (productos y cantidades).
-✅ Detectar si el cliente pregunta por el precio de algún producto.
-✅ Detectar si el cliente cierra el pedido (frases como "listo eso es todo", "nada más gracias").
-✅ Sugerir agregados si el cliente duda.
-✅ Podés ofrecer ayuda si el cliente parece confundido.
-✅ Detectar si el cliente quiere *quitar* o *eliminar* productos del pedido y listarlos en "eliminar_productos".
+Tu función es ayudar al cliente a armar su pedido, responder dudas, y guiarlo hacia el pago. Usá lenguaje simpático e informal.
 
-🧠 Si el cliente recién inicia la conversación con un saludo o algo general, respondé de forma simpática y preguntale si quiere que le muestres el menú. En ese caso devolvé: "ofrecer_menu": true.
+Interpretá frases de forma flexible, aunque sean poco claras o contengan errores.
 
-✅ Si el cliente responde que sí, devolvé: "mostrar_menu": true.
+📦 Tu salida debe ser **siempre un JSON válido**. Sin comentarios, sin explicaciones, solo el JSON.
 
-📦 Formato JSON (respondé **solo esto**):
+🎯 OBJETIVOS:
+- Detectar productos y cantidades mencionados (asumí 1 si no hay número).
+- Identificar si el cliente pregunta por el precio de algo.
+- Detectar si quiere cerrar el pedido o generar el link de pago.
+- Detectar si quiere ver el menú.
+- Detectar si quiere eliminar productos (con o sin cantidad).
+- Soportar frases múltiples (ej. "sacá nuggets y poneme 2 bacon").
+
+🧠 ENTENDÉ TAMBIÉN:
+- Frases indirectas: “ya está bien así”, “dejame solo uno”, “me parece mucho”, “pasame el link”.
+- Frases mezcladas: “sacá los nuggets y agregame 2 bacon cheese”.
+
+⚙️ FORMATO DE RESPUESTA (siempre esto, sin texto extra):
 {
-  "productos": [{"nombre": "...", "cantidad": ...}],
-  "pregunta_precio": "...",
+  "productos": [{"nombre": "...", "cantidad": ...}],   // cantidad negativa si quiere eliminar
+  "pregunta_precio": "...",                            // nombre del producto o null
   "cierre_pedido": true/false,
   "ofrecer_menu": true/false,
   "mostrar_menu": true/false,
-  "eliminar_productos": [{"nombre": "...", "cantidad": ...}]
+  "intencion_pagar": true/false,
+  "eliminar_productos": ["...", "..."]
 }
 
-Menú válido: ${Object.keys(menu).map(p => capitalize(p)).join(", ")}
-` },
+📘 MENÚ ACTUAL:
+${Object.keys(menu).map(p => capitalize(p)).join(", ")}
+` }
+,
   ...pedido.historial.slice(-10)
 ];
 
