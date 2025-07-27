@@ -103,6 +103,7 @@ const consulta = removerArticulos(texto.toLowerCase());
     console.log(`🔎 Sin coincidencia suficiente para: "${texto}" (score: ${mejorCoincidencia.rating})`);
     return null;
   }
+  }
   // Verbos que disparan eliminación
 const VERBOS_ELIMINAR = [
   "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale"
@@ -168,7 +169,6 @@ function aplicarEliminacionesMultiples(pedido, eliminaciones) {
   return huboCambios;
 }
 
-}
 let pedidos = [];
 if (fs.existsSync("pedidos.json")) {
 try {
@@ -382,18 +382,7 @@ if (frasesEliminarTodo.some(f => lower.includes(f)) && !/todo\s+menos/i.test(low
   yaSeRespondio = true;
   return mostrarPedido(pedido);
 }
-    pedido.items = [];
-    pedido.total = 0;
-    let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
-    pedido.items.forEach(i => {
-      resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
-    });
-    resumen += `\n💵 Total: $${pedido.total}\n`;
-    resumen += "¿Querés agregar algo más o generar el link de pago?";
-    return resumen;
-  }
-  
-  
+     
   // Detectar frases como "borra", "elimina", "saca" o "quita" seguidas de un producto
   const borrarMatch = text.match(/\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+(.+)/i);
   if (borrarMatch) {
@@ -580,9 +569,7 @@ if (gptResult.pregunta_precio) {
 }
 let cambios = false;
 
-  if (gptResult.productos.length > 0) {
-    cambios = true;
-   
+
 if (gptResult.productos.length > 0) {
   cambios = true;
   gptResult.productos.forEach(p => {
