@@ -246,6 +246,7 @@ let respuesta = await manejarMensaje(text, pedido);
 
 async function manejarMensaje(text, pedido) {
   const lower = text.toLowerCase();
+    let yaSeRespondio = false;
   // Deriva a humano
     const palabrasHumano = [
   "humano", "Humano",
@@ -476,7 +477,7 @@ const prodLower = prodTexto.toLowerCase();
     }
   }
   if (frasesSolicitarPago.some(f => lower.includes(f))) {
-  yaSeRespondido = true;
+  yaSeRespondio = true;
   const link = await generarLinkPago(pedido); // o `generarLinkDePago(pedido, sender, sock)` si usás el socket
   pedido.pagado = true;
   return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
