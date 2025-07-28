@@ -568,11 +568,8 @@ if (gptResult.pregunta_precio) {
     return "🤔 No encontré ese producto. ¿Podés repetirlo?";
   }
 }
-let cambios = false;
-
 
 if (gptResult.productos.length > 0) {
-  cambios = true;
   gptResult.productos.forEach(p => {
     const nombreNormalizado = p.nombre.toLowerCase();
     const coincidencia = encontrarProductoSimilar(nombreNormalizado);
@@ -615,19 +612,15 @@ if (gptResult.productos.length > 0) {
       }
     }
   });
+let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+  pedido.items.forEach(i => {
+    resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
+  });
+  resumen += `\n💵 Total: $${pedido.total}\n`;
+  resumen += "¿Querés agregar algo más o generar el link de pago?";
+
+  return resumen; // 👈 muy importante: devuelve el mensaje al usuario
 }
-
-
-  if (cambios) {
-    let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
-    pedido.items.forEach(i => {
-      resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
-    });
-    resumen += `\n💵 Total: $${pedido.total}\n`;
-    resumen += "¿Querés agregar algo más o generar el link de pago?";
-
-    return resumen; // 👈 muy importante: devuelve el mensaje al usuario
-  }
 
 
 
