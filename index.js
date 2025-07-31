@@ -70,17 +70,18 @@ const menu = {
 
 const frasesEliminarTodo = [
   "borrá todo", "borra todo", "anulá todo", "anula todo", "cancelá el pedido", 
-  "cancelar todo", "nuevo pedido", "empezá de nuevo", "resetear pedido", "reiniciar"
+  "cancelar todo", "nuevo pedido", "empezá de nuevo", "resetear pedido", "reiniciar",
+  "empecemos de cero", "resetear todo", "limpiar pedido", "pedido nuevo"
 ];
 
 const frasesSolicitarPago = [
   "quiero pagar", "pasame el link", "mandame el link", "generá el link", 
-  "cobrámelo", "cobrame", "pagar", "link de pago"
+  "cobrámelo", "cobrame", "pagar", "link de pago", "finalizá", "cobrame ya", "cómo pago", "terminamos", "ya está", "finalizalo"
 ];
 
 const frasesEliminarParcial = [
   "sacá", "saca", "restale", "quitá", "quita", "eliminá", "elimina", 
-  "dejame", "dejá", "dejá solo", "dejá solamente", "dejame solo"
+  "dejame", "dejá", "dejá solo", "dejá solamente", "dejame solo", "sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "quita eso"
 ];
 
 // 👉 Función para remover artículos comunes
@@ -106,7 +107,7 @@ const consulta = removerArticulos(texto.toLowerCase());
   }
   // Verbos que disparan eliminación
 const VERBOS_ELIMINAR = [
-  "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale"
+  "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale","sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "quita eso"
 ];
 
 // Separadores de productos
@@ -300,11 +301,12 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "ubicación exacta", "Ubicación exacta",
   "ubicacion del local", "Ubicacion del local",
   "como ir", "Como ir",
-  "como llego al local", "Como llego al local"
+  "como llego al local", "Como llego al local",
+  "están en", "me pasás la dirección", "quiero saber dónde están", "cómo los encuentro", "pasa dirección"
 ];
 
   if (palabrasUbicacion.some(p => lower.includes(p.toLowerCase()))) {
-    return STORE_ADDRESS || "Ubicación no configurada";
+    return STORE_ADDRESS || "📍 Nuestra dirección: Uttinger, Gral. José de San Martín y, T4103 Tafí Viejo, Tucumán.";
   }
 
   // Detecta solicitud de menú/carta
@@ -347,7 +349,8 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "quiero la carta", "Quiero la carta",
   "dame el menu", "Dame el menu",
   "mostrar menu", "Mostrar menu",
-  "mostrar carta", "Mostrar carta"
+  "mostrar carta", "Mostrar carta",
+  "menues", "qué ofrecen", "qué tienen", "qué venden", "pasá la carta", "pasa el listado"
 ];
 if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
@@ -484,7 +487,7 @@ const prodLower = prodTexto.toLowerCase();
   pedido.pagado = true;
   return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
 }
-const matchEliminarParcial = lower.match(/(?:sacá|saca|restale|quitá|quita|eliminá|elimina|dejame|dejá solo|dejá|dejame solo)\s+(\d+)\s+(.*)/i);
+const matchEliminarParcial = lower.match(/(?:sacá|saca|restale|quitá|quita|quitale|eliminá|elimina|dejame|dejá solo|dejá|deja|dejame solo|dejá solamente|deja solamente|dejame solamente|dejáme solamente|saca todo a excepcion de)\s+(\d+)\s+(.*)/i);
 if (matchEliminarParcial) {
   const cantidad = parseInt(matchEliminarParcial[1]);
   const nombreProducto = matchEliminarParcial[2];
@@ -506,7 +509,7 @@ if (matchEliminarParcial) {
   }
 }
 
-const matchRestar = lower.match(/(restale|sacá|quitá|dejame|dejá solo)\s+(\d+)\s+(.*)/);
+const matchRestar = lower.match(/(restale|sacá|quitá|quitale|dejame|dejá solo|dejá solamente|deja solamente|dejame solamente|dejáme solamente|saca todo a excepcion de)\s+(\d+)\s+(.*)/);
 if (matchRestar) {
   const cantidad = parseInt(matchRestar[2]);
   const nombreProducto = matchRestar[3];
