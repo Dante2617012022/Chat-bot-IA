@@ -114,6 +114,35 @@ const VERBOS_ELIMINAR = [
 // Separadores de productos
 const SEP_PRODUCTOS = /\s*(?:,| y | e )\s*/i;
 
+// Conversión básica de números escritos en español a dígitos
+const NUM_PALABRAS = {
+  "un": 1, "uno": 1, "una": 1,
+  "dos": 2,
+  "tres": 3,
+  "cuatro": 4,
+  "cinco": 5,
+  "seis": 6,
+  "siete": 7,
+  "ocho": 8,
+  "nueve": 9,
+  "diez": 10,
+  "once": 11,
+  "doce": 12,
+  "trece": 13,
+  "catorce": 14,
+  "quince": 15,
+  "dieciseis": 16, "dieciséis": 16,
+  "diecisiete": 17,
+  "dieciocho": 18,
+  "diecinueve": 19,
+  "veinte": 20
+};
+
+function reemplazarNumerosEscritos(texto) {
+  const regex = new RegExp(`\\b(${Object.keys(NUM_PALABRAS).join("|")})\\b`, "gi");
+  return texto.replace(regex, (m) => NUM_PALABRAS[m.toLowerCase()]);
+}
+
 /**
  * Parsea una frase que contenga una intención de ELIMINAR varios productos.
  * Devuelve: [{ nombre: "Americana 2.0 Doble", cantidad: 2|null }, ...]
@@ -255,7 +284,7 @@ let respuesta = await manejarMensaje(text, pedido);
 }
 
 async function manejarMensaje(text, pedido) {
-  const lower = text.toLowerCase();
+  let lower = reemplazarNumerosEscritos(text.toLowerCase());
     let yaSeRespondio = false;
     
     const saludos = [
@@ -402,7 +431,7 @@ if (reiniciar.test(lower) || (frasesEliminarTodo.some(f => lower.includes(f)) &&
   
      
   // Detectar frases como "borra", "elimina", "saca" o "quita" seguidas de un producto
-  const borrarMatch = text.match(/\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+(.+)/i);
+  const borrarMatch = lower.match(/\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+(.+)/i);
   if (borrarMatch) {
     let prodTexto = borrarMatch[1].replace(/[.!?,;]+$/, '').trim();
     prodTexto = prodTexto.replace(/^(?:la|las|el|los)\s+/i, '');
@@ -456,7 +485,7 @@ const prodLower = prodTexto.toLowerCase();
     }
   }
   // Detectar frases como "agrega" o "sumale" seguidas de un producto
-  const agregarMatch = text.match(/\b(?:agrega(?:r|me|le)?|sumale?|añade|anade|pon(?:e|me|le)?|adiciona)\s+(\d+)?\s*(.+)/i);
+  const agregarMatch = lower.match(/\b(?:agrega(?:r|me|le)?|sumale?|añade|anade|pon(?:e|me|le)?|adiciona)\s+(\d+)?\s*(.+)/i);
   if (agregarMatch) {
     const cantidad = agregarMatch[1] ? parseInt(agregarMatch[1], 10) : 1;
     let prodTexto = agregarMatch[2].replace(/[.!?,;]+$/, '').trim();
