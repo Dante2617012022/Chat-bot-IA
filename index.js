@@ -84,6 +84,7 @@ const frasesEliminarParcial = [
   "dejame", "dejá", "dejá solo", "dejá solamente", "dejame solo", "sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "quita eso"
 ];
 
+
 // 👉 Función para remover artículos comunes
 function removerArticulos(texto) {
   return texto
@@ -256,6 +257,17 @@ let respuesta = await manejarMensaje(text, pedido);
 async function manejarMensaje(text, pedido) {
   const lower = text.toLowerCase();
     let yaSeRespondio = false;
+    
+    const saludos = [
+  "hola", "hola!", "hola!!", "hola como estas", "buenas", "buenas!", "buenas noches", 
+  "buenas tardes", "buenos dias", "que tal", "cómo estás", "como estas"
+];
+ // Saludos
+if (saludos.some(s => lower.includes(s))) {
+  yaSeRespondio = true;
+  return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
+}
+
   // Deriva a humano
     const palabrasHumano = [
   "humano", "Humano",
@@ -302,7 +314,7 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "ubicacion del local", "Ubicacion del local",
   "como ir", "Como ir",
   "como llego al local", "Como llego al local",
-  "están en", "me pasás la dirección", "quiero saber dónde están", "cómo los encuentro", "pasa dirección"
+  "están en", "me pasás la dirección", "quiero saber dónde están", "como los encuentro", "Cómo los encuentro", "cómo los encuentro", "pasa dirección"
 ];
 
   if (palabrasUbicacion.some(p => lower.includes(p.toLowerCase()))) {
@@ -350,7 +362,7 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "dame el menu", "Dame el menu",
   "mostrar menu", "Mostrar menu",
   "mostrar carta", "Mostrar carta",
-  "menues", "qué ofrecen", "qué tienen", "qué venden", "pasá la carta", "pasa el listado"
+  "menues", "qué ofrecen", "qué tienen", "Qué tienen","Que tienen", "qué venden", "pasá la carta", "pasa el listado"
 ];
 if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
