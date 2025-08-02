@@ -702,7 +702,7 @@ Interpretá frases de forma flexible, aunque sean poco claras o contengan errore
 🧠 ENTENDÉ TAMBIÉN:
 - Frases indirectas: “ya está bien así”, “dejame solo uno”, “me parece mucho”, “pasame el link”.
 - Frases mezcladas: “sacá los nuggets y agregame 2 bacon cheese”.
-
+🛑 IMPORTANTE: No repitas productos ya agregados en el historial. Solo procesá lo nuevo del mensaje.
 ⚙️ FORMATO DE RESPUESTA (siempre esto, sin texto extra):
 {
   "productos": [{"nombre": "...", "cantidad": ...}],   // cantidad negativa si quiere eliminar
