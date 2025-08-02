@@ -422,7 +422,7 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
     }
   }
   // Detectar frases para reiniciar el pedido o eliminar todo
-  const reiniciar = /\b(?:nuevo\s+pedido|cancel(?:ar)?\s+todo|reiniciar\s+pedido|cancel(?:ar)?\s+pedido|anular\s+pedido|resetear\s+pedido|cancel(?:a|á)\s+la\s+orden)\b/i;
+  const reiniciar = /\b(?:nuevo\s+pedido|cancel(?:ar)?\s+todo|anular\s+todo|cancel(?:a)?\s+todo|anula\s+todo|desaparece\s+todo|desaparecer\s+todo|reiniciar\s+pedido|cancel(?:ar)?\s+pedido|anular\s+pedido|resetear\s+pedido|cancel(?:a|á)\s+la\s+orden|resete(?:a|á)\s+la\s+orden|resetea(?:a|r)\s+la\s+orden)\b/i;
 if (reiniciar.test(lower) || (frasesEliminarTodo.some(f => lower.includes(f)) && !/todo\s+menos/i.test(lower))) {
     pedido.items = [];
     pedido.total = 0;
