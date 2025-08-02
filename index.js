@@ -93,19 +93,31 @@ function removerArticulos(texto) {
     .join(" ");
 }
 // 👉 Función para buscar el producto más parecido
+function singularizarPalabra(palabra) {
+  return palabra.replace(/(?:es|s)$/i, "");
+}
 function encontrarProductoSimilar(texto) {
   const productos = Object.keys(menu);
-const consulta = removerArticulos(texto.toLowerCase());
-  const coincidencias = stringSimilarity.findBestMatch(consulta, productos);
-  const mejorCoincidencia = coincidencias.bestMatch;
+let consulta = removerArticulos(texto.toLowerCase());
+  let coincidencias = stringSimilarity.findBestMatch(consulta, productos);
+  let mejorCoincidencia = coincidencias.bestMatch;
 
   if (mejorCoincidencia.rating > 0.6) {
     return mejorCoincidencia.target;
-  } else {
-    console.log(`🔎 Sin coincidencia suficiente para: "${texto}" (score: ${mejorCoincidencia.rating})`);
-    return null;
+ 
   }
+  const singular = singularizarPalabra(consulta);
+  if (singular !== consulta) {
+    coincidencias = stringSimilarity.findBestMatch(singular, productos);
+    mejorCoincidencia = coincidencias.bestMatch;
+    if (mejorCoincidencia.rating > 0.6) {
+      return mejorCoincidencia.target;
+    }
   }
+  console.log(`🔎 Sin coincidencia suficiente para: "${texto}" (score: ${mejorCoincidencia.rating})`);
+  return null;
+}
+
   // Verbos que disparan eliminación
 const VERBOS_ELIMINAR = [
   "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale","sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "quita eso"
@@ -561,6 +573,31 @@ const prodLower = prodTexto.toLowerCase();
   const link = await generarLinkPago(pedido); // o `generarLinkDePago(pedido, sender, sock)` si usás el socket
   pedido.pagado = true;
   return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+  }
+// 👇 Detección: “dejame solo 2 latas”, “dejá solamente tres nuggets”
+const mantenerSolo = parseEliminarTodoExcepto(lower);
+if (mantenerSolo) {
+  const nombreLimpio = mantenerSolo.nombre.replace(/[.!?,;]+$/, '').trim();
+  const singular = singularizarPalabra(nombreLimpio);
+  const match = encontrarProductoSimilar(nombreLimpio)
+             ?? encontrarProductoSimilar(singular)
+             ?? Object.keys(menu).find(p => p.toLowerCase().includes(nombreLimpio.toLowerCase()))
+             ?? Object.keys(menu).find(p => p.toLowerCase().includes(singular.toLowerCase()));
+
+  if (match) {
+    const nombreCapitalizado = capitalize(match);
+    const precio = menu[match];
+    pedido.items = [{
+      producto: nombreCapitalizado,
+      cantidad: mantenerSolo.cantidad,
+      precio_unitario: precio,
+      subtotal: mantenerSolo.cantidad * precio
+    }];
+    pedido.total = mantenerSolo.cantidad * precio;
+
+    yaSeRespondio = true;
+    return mostrarPedido(pedido);
+  }
 }
 const matchEliminarParcial = lower.match(/(?:sacá|saca|restale|quitá|quita|quitale|eliminá|elimina|dejame|dejá solo|dejá|deja solamente|dejame solamente|dejame solo|dejá solamente|deja solamente|dejame solamente|dejáme solamente|saca todo a excepcion de)\s+(\d+)\s+(.*)/i);
 if (matchEliminarParcial) {
@@ -614,27 +651,7 @@ if (eliminacionesMultiples && eliminacionesMultiples.length > 0) {
     return mostrarPedido(pedido); // o tu bloque que arma el resumen
   }
 }
-// 👇 Detección: “dejame solo 2 latas”, “dejá solamente tres nuggets”
-const mantenerSolo = parseEliminarTodoExcepto(lower);
-if (mantenerSolo) {
-  const match = encontrarProductoSimilar(mantenerSolo.nombre)
-             ?? Object.keys(menu).find(p => p.toLowerCase().includes(mantenerSolo.nombre.toLowerCase()));
 
-  if (match) {
-    const nombreCapitalizado = capitalize(match);
-    const precio = menu[match];
-    pedido.items = [{
-      producto: nombreCapitalizado,
-      cantidad: mantenerSolo.cantidad,
-      precio_unitario: precio,
-      subtotal: mantenerSolo.cantidad * precio
-    }];
-    pedido.total = mantenerSolo.cantidad * precio;
-
-    yaSeRespondio = true;
-    return mostrarPedido(pedido);
-  }
-}
 
 
   // Detectar intención con GPT-4o usando memoria
