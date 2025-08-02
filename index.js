@@ -165,6 +165,40 @@ function parseEliminarMultiple(lower) {
 
   return eliminaciones;
 }
+const VERBOS_DEJAR_SOLO = [
+  "dejame", "deja", "dejá", "dejar", "solamente", "solo", "únicamente"
+];
+
+// Detectar expresiones tipo: "dejame solo 3 latas", "dejá únicamente dos nuggets"
+function parseEliminarTodoExcepto(lower) {
+  const regex = /\b(dejame|dejá|deja)\b.*?\b(?:solo|solamente|únicamente)?\s*(\d+|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+(.+)/i;
+  const m = lower.match(regex);
+  if (!m) return null;
+
+  const cantidadTexto = m[2].trim();
+  const nombre = m[3].trim();
+
+  const cantidad = convertirTextoANumero(cantidadTexto);
+  if (!cantidad || !nombre) return null;
+
+  return { nombre, cantidad };
+}
+function convertirTextoANumero(palabra) {
+  const mapa = {
+    "uno": 1, "una": 1,
+    "dos": 2,
+    "tres": 3,
+    "cuatro": 4,
+    "cinco": 5,
+    "seis": 6,
+    "siete": 7,
+    "ocho": 8,
+    "nueve": 9,
+    "diez": 10
+  };
+  if (!isNaN(palabra)) return parseInt(palabra);
+  return mapa[palabra.toLowerCase()] || null;
+}
 
 /**
  * Aplica una lista de eliminaciones al pedido.
@@ -528,7 +562,7 @@ const prodLower = prodTexto.toLowerCase();
   pedido.pagado = true;
   return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
 }
-const matchEliminarParcial = lower.match(/(?:sacá|saca|restale|quitá|quita|quitale|eliminá|elimina|dejame|dejá solo|dejá|deja|dejame solo|dejá solamente|deja solamente|dejame solamente|dejáme solamente|saca todo a excepcion de)\s+(\d+)\s+(.*)/i);
+const matchEliminarParcial = lower.match(/(?:sacá|saca|restale|quitá|quita|quitale|eliminá|elimina|dejame|dejá solo|dejá|deja solamente|dejame solamente|dejame solo|dejá solamente|deja solamente|dejame solamente|dejáme solamente|saca todo a excepcion de)\s+(\d+)\s+(.*)/i);
 if (matchEliminarParcial) {
   const cantidad = parseInt(matchEliminarParcial[1]);
   const nombreProducto = matchEliminarParcial[2];
@@ -578,6 +612,27 @@ if (eliminacionesMultiples && eliminacionesMultiples.length > 0) {
   if (huboCambios) {
     yaSeRespondio = true;
     return mostrarPedido(pedido); // o tu bloque que arma el resumen
+  }
+}
+// 👇 Detección: “dejame solo 2 latas”, “dejá solamente tres nuggets”
+const mantenerSolo = parseEliminarTodoExcepto(lower);
+if (mantenerSolo) {
+  const match = encontrarProductoSimilar(mantenerSolo.nombre)
+             ?? Object.keys(menu).find(p => p.toLowerCase().includes(mantenerSolo.nombre.toLowerCase()));
+
+  if (match) {
+    const nombreCapitalizado = capitalize(match);
+    const precio = menu[match];
+    pedido.items = [{
+      producto: nombreCapitalizado,
+      cantidad: mantenerSolo.cantidad,
+      precio_unitario: precio,
+      subtotal: mantenerSolo.cantidad * precio
+    }];
+    pedido.total = mantenerSolo.cantidad * precio;
+
+    yaSeRespondio = true;
+    return mostrarPedido(pedido);
   }
 }
 
