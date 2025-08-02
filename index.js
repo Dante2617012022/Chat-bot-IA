@@ -671,7 +671,16 @@ let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
 
 
   }
-let procesarConGPT = async function(pedido) {
+function resumenBreve(pedido) {
+  if (!pedido || !pedido.items || pedido.items.length === 0) {
+    return "Pedido vacío.";
+  }
+  const ult = pedido.items[pedido.items.length - 1];
+  const resumen = `Último producto: ${ult.cantidad} ${ult.producto}.`;
+  return resumen.slice(0, 120);
+}
+
+  let procesarConGPT = async function(pedido) {
   const historialGPT = [
   { role: "system", content: `
 Sos un asistente inteligente de Camdis, una hamburguesería.
@@ -706,12 +715,12 @@ Interpretá frases de forma flexible, aunque sean poco claras o contengan errore
 }
 
 📘 MENÚ ACTUAL:
-${Object.keys(menu).map(p => capitalize(p)).join(", ")}
-` }
-,
-  ...pedido.historial.slice(-10)
-];
-
+  ${Object.keys(menu).map(p => capitalize(p)).join(", ")}
+  ` }
+  ,
+  { role: "system", content: resumenBreve(pedido) },
+    ...pedido.historial.slice(-1)
+  ];
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
