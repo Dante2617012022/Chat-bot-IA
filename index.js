@@ -154,7 +154,15 @@ function reemplazarNumerosEscritos(texto) {
   const regex = new RegExp(`\\b(${Object.keys(NUM_PALABRAS).join("|")})\\b`, "gi");
   return texto.replace(regex, (m) => NUM_PALABRAS[m.toLowerCase()]);
 }
+function detectarNombre(texto) {
+  const match = texto.match(/\b(me llamo|soy|mi nombre es)\s+([a-záéíóúñ\s]+)/i);
+  return match ? match[2].trim() : null;
+}
 
+function detectarDireccion(texto) {
+  const match = texto.match(/\b(mi dirección es|mi direccion es|vivo en|estoy en)\s+([a-záéíóúñ0-9\s,.-]+)/i);
+  return match ? match[2].trim() : null;
+}
 /**
  * Parsea una frase que contenga una intención de ELIMINAR varios productos.
  * Devuelve: [{ nombre: "Americana 2.0 Doble", cantidad: 2|null }, ...]
@@ -295,14 +303,19 @@ const qrcode = require("qrcode-terminal");
 
     let pedido = pedidos.find(p => p.cliente === sender && !p.pagado);
     if (!pedido) {
-      pedido = { 
-        cliente: sender, 
-        items: [], 
-        total: 0, 
-        pagado: false, 
+      pedido = {
+        cliente: sender,
+        items: [],
+        total: 0,
+        pagado: false,
         historial: [],
-        interacciones: 0
+        interacciones: 0,
+        nombre: null,
+        direccion: null
       };
+      } else {
+      if (pedido.nombre === undefined) pedido.nombre = null;
+      if (pedido.direccion === undefined) pedido.direccion = null;
     }
 
     pedido.interacciones++;
@@ -331,10 +344,39 @@ let respuesta = await manejarMensaje(text, pedido);
 
 async function manejarMensaje(text, pedido) {
   let lower = reemplazarNumerosEscritos(text.toLowerCase());
-    let yaSeRespondio = false;
+let yaSeRespondio = false;
+
+  const teniaNombre = !!pedido.nombre;
+  const teniaDireccion = !!pedido.direccion;
+  const posibleNombre = detectarNombre(text);
+  const posibleDireccion = detectarDireccion(text);
+
+  if (posibleNombre && !teniaNombre) {
+    pedido.nombre = capitalize(posibleNombre);
+  }
+  if (posibleDireccion && !teniaDireccion) {
+    pedido.direccion = posibleDireccion;
+  }
+
+  if (!teniaNombre && posibleNombre && !pedido.direccion) {
+    yaSeRespondio = true;
+    return `✅ ¡Gracias ${pedido.nombre}! ¿Podés decirme tu dirección también?`;
+  }
+
+  if (!teniaDireccion && posibleDireccion && !pedido.nombre) {
+    yaSeRespondio = true;
+    return `✅ Dirección recibida: ${pedido.direccion}. ¿Cuál es tu nombre completo?`;
+  }
+
+  if ((posibleNombre && !teniaNombre) || (posibleDireccion && !teniaDireccion)) {
+    if (pedido.nombre && pedido.direccion) {
+      yaSeRespondio = true;
+      return `✅ Gracias ${pedido.nombre}. Dirección recibida: ${pedido.direccion}. ¿Querés que te pase el link de pago ahora?`;
+    }
+  }
     
     const saludos = [
-  "hola", "hola!", "hola!!", "hola como estas", "buenas", "buenas!", "buenas noches", 
+  "hola", "hola!", "hola!!", "hola como estas", "buenas", "buenas!", "buenas noches",
   "buenas tardes", "buenos dias", "que tal", "cómo estás", "como estas"
 ];
  // Saludos
@@ -570,9 +612,14 @@ const prodLower = prodTexto.toLowerCase();
   }
   if (frasesSolicitarPago.some(f => lower.includes(f))) {
   yaSeRespondio = true;
+  if (!pedido.nombre || !pedido.direccion) {
+    if (!pedido.nombre && !pedido.direccion) return "📋 Antes de continuar, necesito tu nombre completo y tu dirección.";
+    if (!pedido.nombre) return "📋 Antes de generar el pago, necesito tu nombre completo.";
+    return "📋 Me falta tu dirección. ¿Podés decirme dónde se va a entregar el pedido?";
+  }
   const link = await generarLinkPago(pedido); // o `generarLinkDePago(pedido, sender, sock)` si usás el socket
   pedido.pagado = true;
-  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+  return `💸 Perfecto, ${pedido.nombre}. Aquí está tu link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
   }
 // 👇 Detección: “dejame solo 2 latas”, “dejá solamente tres nuggets”
 const mantenerSolo = parseEliminarTodoExcepto(lower);
@@ -657,12 +704,17 @@ if (eliminacionesMultiples && eliminacionesMultiples.length > 0) {
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await module.exports.procesarConGPT(pedido);
   // Detectar intención de pagar con GPT
-if (gptResult.intencion_pagar === true) {
+  if (gptResult.intencion_pagar === true) {
   yaSeRespondio = true;
+  if (!pedido.nombre || !pedido.direccion) {
+    if (!pedido.nombre && !pedido.direccion) return "📋 Antes de continuar, necesito tu nombre completo y tu dirección.";
+    if (!pedido.nombre) return "📋 Antes de generar el pago, necesito tu nombre completo.";
+    return "📋 Me falta tu dirección. ¿Podés decirme dónde se va a entregar el pedido?";
+  }
   const link = await generarLinkPago(pedido);
   pedido.pagado = true;
-  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
-}
+  return `💸 Perfecto, ${pedido.nombre}. Aquí está tu link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+  }
 if (gptResult.ofrecer_menu) {
   return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
 }
@@ -672,10 +724,16 @@ if (gptResult.mostrar_menu) {
 }
 
   if (gptResult.cierre_pedido) {
-    const link = await generarLinkPago(pedido);
-    pedido.pagado = true;
-    return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
-  }
+      yaSeRespondio = true;
+      if (!pedido.nombre || !pedido.direccion) {
+        if (!pedido.nombre && !pedido.direccion) return "📋 Antes de continuar, necesito tu nombre completo y tu dirección.";
+        if (!pedido.nombre) return "📋 Antes de generar el pago, necesito tu nombre completo.";
+        return "📋 Me falta tu dirección. ¿Podés decirme dónde se va a entregar el pedido?";
+      }
+      const link = await generarLinkPago(pedido);
+      pedido.pagado = true;
+      return `💸 Perfecto, ${pedido.nombre}. Aquí está tu link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+    }
 // 👉 Detectar si preguntó el precio de un producto
 if (gptResult.pregunta_precio) {
   const prod = gptResult.pregunta_precio.toLowerCase();
