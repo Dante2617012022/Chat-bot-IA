@@ -120,7 +120,13 @@ let consulta = removerArticulos(texto.toLowerCase());
 
   // Verbos que disparan eliminación
 const VERBOS_ELIMINAR = [
-  "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale","sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "quita eso"
+  "sacá","saca","quitá","quita","eliminá","elimina","borra","borrar","remove","restale","sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "sacame las dos", "sácame las dos", "Sacame las dos", "Sácame las dos", "sacame las 2", "sácame las 2", "Sacame las 2", "Sácame las 2", "quita la totalidad" , "sacame las 3", "sácame las 3", "Sacame las 3", "Sácame las 3", "sacame las tres", "sácame las tres", "Sacame las tres", "Sácame las tres", "sacame las 4", "sácame las 4", "Sacame las 4", "Sácame las 4", "sacame las cuatro", "sácame las cuatro", "Sacame las cuatro", "Sácame las cuatro", "sacame las 5", "sácame las 5", "Sacame las 5", "Sácame las 5", "sacame las cinco", "sácame las cinco", "Sacame las cinco", "Sácame las cinco"
+  
+  , "saca las dos", "sáca las dos", "Saca las dos", "Sáca las dos", "saca las 2", "sáca las 2", "Saca las 2", "Sáca las 2", "saca las 3", "sáca las 3", "Saca las 3", "Sáca las 3", "saca las tres", "sáca las tres", "Saca las tres", "Sáca las tres", "saca las 4", "sáca las 4", "Saca las 4", "Sáca las 4", "saca las cuatro", "sáca las cuatro", "Saca las cuatro", "Sáca las cuatro", "saca las 5", "sáca las 5", "Saca las 5", "Sáca las 5", "saca las cinco", "sáca las cinco", "Saca las cinco", "Sáca las cinco"
+  
+  , "saca los dos", "sáca los dos", "Saca los dos", "Sáca los dos", "saca los 2", "sáca los 2", "Saca los 2", "Sáca los 2", "saca los 3", "sáca los 3", "Saca los 3", "Sáca los 3", "saca los tres", "sáca los tres", "Saca los tres", "Sáca los tres", "saca los 4", "sáca los 4", "Saca los 4", "Sáca los 4", "saca los cuatro", "sáca los cuatro", "Saca los cuatro", "Sáca los cuatro", "saca los 5", "sáca los 5", "Saca los 5", "Sáca los 5", "saca los cinco", "sáca las cinco", "Saca los cinco", "Sáca los cinco"
+  
+  , "sacame los dos", "sácame los dos", "Sacame los dos", "Sácame los dos", "sacame los 2", "sácame los 2", "Sacame los 2", "Sácame los 2", "sacame los 3", "sácame los 3", "Sacame los 3", "Sácame los 3", "sacame los tres", "sácame los tres", "Sacame los tres", "Sácame los tres", "sacame los 4", "sácame los 4", "Sacame los 4", "Sácame los 4", "sacame los cuatro", "sácame los cuatro", "Sacame los cuatro", "Sácame los cuatro", "sacame los 5", "sácame los 5", "Sacame los 5", "Sácame los 5", "sacame los cinco", "sácame los cinco", "Sacame los cinco", "Sácame los cinco"
 ];
 
 // Separadores de productos
@@ -334,13 +340,22 @@ async function manejarMensaje(text, pedido) {
     let yaSeRespondio = false;
     
     const saludos = [
-  "hola", "hola!", "hola!!", "hola como estas", "buenas", "buenas!", "buenas noches", 
+  "hola", "hola!", "hola!!", "hola como estas", "Ola", "Olaa", "Olaaa", "olaaa", "ola", "buenas", "buenas!", "buenas noches", 
   "buenas tardes", "buenos dias", "que tal", "cómo estás", "como estas"
 ];
  // Saludos
 if (saludos.some(s => lower.includes(s))) {
   yaSeRespondio = true;
   return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
+}
+const afirmativos = ["si", "sí", "dale", "ok", "mostralo", "mostrame", "quiero", "de una"];
+if (
+  afirmativos.some(a => lower === a || lower.includes(a)) &&
+  pedido.historial.length >= 2 &&
+  pedido.historial[pedido.historial.length - 2].content.includes("¿Querés que te muestre el menú completo?")
+) {
+  yaSeRespondio = true;
+  return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
 }
 
   // Deriva a humano
@@ -686,7 +701,18 @@ if (gptResult.pregunta_precio) {
     return "🤔 No encontré ese producto. ¿Podés repetirlo?";
   }
 }
-
+// 👉 Procesar eliminaciones si existen
+if (gptResult.eliminar_productos && gptResult.eliminar_productos.length > 0) {
+  const eliminaciones = gptResult.eliminar_productos.map(nombre => ({
+    nombre,
+    cantidad: null
+  }));
+  const huboCambios = aplicarEliminacionesMultiples(pedido, eliminaciones);
+  if (huboCambios) {
+    yaSeRespondio = true;
+    return mostrarPedido(pedido);
+  }
+}
 if (gptResult.productos.length > 0) {
   gptResult.productos.forEach(p => {
     const nombreNormalizado = p.nombre.toLowerCase();
@@ -773,7 +799,7 @@ Interpretá frases de forma flexible, aunque sean poco claras o contengan errore
 
 🧠 ENTENDÉ TAMBIÉN:
 - Frases indirectas: “ya está bien así”, “dejame solo uno”, “me parece mucho”, “pasame el link”.
-- Frases mezcladas: “sacá los nuggets y agregame 2 bacon cheese”.
+- Frases mezcladas o combinadas: “sacame la triple L y poneme una cuarto simple”, “sacá los nuggets y agregame 2 bacon cheese”.
 🛑 IMPORTANTE: No repitas productos ya agregados en el historial. Solo procesá lo nuevo del mensaje.
 ⚙️ FORMATO DE RESPUESTA (siempre esto, sin texto extra):
 {
@@ -795,7 +821,7 @@ Interpretá frases de forma flexible, aunque sean poco claras o contengan errore
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+  model: "gpt-3.5-turbo",
     messages: historialGPT
   });
 
@@ -837,7 +863,7 @@ function saludoDinamico(pedido) {
     extra = " ¡Qué bueno verte de nuevo!";
   }
 
-  return `${saludoHora}${extra} ¿Almuerzo o cena hoy?`;
+return `${saludoHora}${extra}`;
 }
 
 function menuToString() {
