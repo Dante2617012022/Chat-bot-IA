@@ -83,6 +83,56 @@ const frasesEliminarParcial = [
   "sacá", "saca", "restale", "quitá", "quita", "eliminá", "elimina", 
   "dejame", "dejá", "dejá solo", "dejá solamente", "dejame solo", "sacale", "bajale", "quitalo", "eliminalo", "quitame", "restame", "quita eso"
 ];
+// 👉 Extraer nombre, dirección y medio de pago del mensaje
+function extraerDatosCliente(texto, pedido) {
+const partes = texto.split(/[\n,]/).map(p => p.trim()).filter(Boolean);
+  for (const parte of partes) {
+    const lower = parte.toLowerCase();
+    if (!pedido.medioPago && /(mercado\s*pago|mercadopago|mp)/i.test(lower)) {
+      pedido.medioPago = "mercado pago";
+      continue;
+    }
+    if (!pedido.medioPago && /efectivo/.test(lower)) {
+      pedido.medioPago = "efectivo";
+      continue;
+    }
+    if (!pedido.direccion && /\d/.test(parte)) {
+      pedido.direccion = parte;
+      continue;
+    }
+    if (!pedido.nombre) {
+      const m = parte.match(/me llamo\s+([a-záéíóúñü\s]+)/i) || parte.match(/mi nombre es\s+([a-záéíóúñü\s]+)/i);
+      if (m) {
+        pedido.nombre = capitalize(m[1].trim());
+        continue;
+      }
+    }
+    if (
+      !pedido.nombre &&
+      /^[a-záéíóúñü\s]+$/i.test(parte) &&
+      parte.split(/\s+/).length >= 2 &&
+      !/(link|pago)/i.test(parte)
+    ) {
+      pedido.nombre = capitalize(parte);
+    }
+  }
+  if (!pedido.direccion) {
+    const m = texto.match(/direcci[óo]n?:?\s*(.*)/i);
+    if (m) pedido.direccion = m[1].trim();
+  }
+  if (!pedido.medioPago) {
+    if (/mercado\s*pago|mercadopago/i.test(texto)) pedido.medioPago = "mercado pago";
+    else if (/efectivo/i.test(texto)) pedido.medioPago = "efectivo";
+  }
+}
+
+function datosFaltantes(pedido) {
+  const faltan = [];
+  if (!pedido.nombre) faltan.push("nombre");
+  if (!pedido.direccion) faltan.push("direccion");
+  if (!pedido.medioPago) faltan.push("medioPago");
+  return faltan;
+}
 
 
 // 👉 Función para remover artículos comunes
@@ -301,15 +351,19 @@ const qrcode = require("qrcode-terminal");
 
     let pedido = pedidos.find(p => p.cliente === sender && !p.pagado);
     if (!pedido) {
-      pedido = { 
-        cliente: sender, 
-        items: [], 
-        total: 0, 
-        pagado: false, 
-        historial: [],
-        interacciones: 0
-      };
-    }
+        pedido = {
+          cliente: sender,
+          items: [],
+          total: 0,
+          pagado: false,
+          historial: [],
+          interacciones: 0,
+          nombre: null,
+          direccion: null,
+          medioPago: null,
+          solicitandoCampo: null
+        };
+      }
 
     pedido.interacciones++;
     pedido.historial.push({ role: "user", content: text });
@@ -337,7 +391,9 @@ let respuesta = await manejarMensaje(text, pedido);
 
 async function manejarMensaje(text, pedido) {
   let lower = reemplazarNumerosEscritos(text.toLowerCase());
-    let yaSeRespondio = false;
+extraerDatosCliente(text, pedido);
+  let quierePagar = frasesSolicitarPago.some(f => lower.includes(f));
+  let yaSeRespondio = false;
     
     const saludos = [
   "hola", "hola!", "hola!!", "hola como estas", "Ola", "Olaa", "Olaaa", "olaaa", "ola", "buenas", "buenas!", "buenas noches", 
@@ -452,7 +508,7 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "dame el menu", "Dame el menu",
   "mostrar menu", "Mostrar menu",
   "mostrar carta", "Mostrar carta",
-  "menues", "qué ofrecen", "qué tienen", "Qué tienen","Que tienen", "qué venden", "pasá la carta", "pasa el listado", "Pasame", "pasame"
+  "menues", "qué ofrecen", "qué tienen", "Qué tienen","Que tienen", "qué venden", "pasá la carta", "pasa el listado"
 ];
 if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
@@ -591,12 +647,7 @@ const prodLower = prodTexto.toLowerCase();
       return resumen;
     }
   }
-  if (frasesSolicitarPago.some(f => lower.includes(f))) {
-  yaSeRespondio = true;
-  const link = await generarLinkPago(pedido); // o `generarLinkDePago(pedido, sender, sock)` si usás el socket
-  pedido.pagado = true;
-  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\n 😉`;
-  }
+ 
 // 👇 Detección: “dejame solo 2 latas”, “dejá solamente tres nuggets”
 const mantenerSolo = parseEliminarTodoExcepto(lower);
 if (mantenerSolo) {
@@ -679,26 +730,16 @@ if (eliminacionesMultiples && eliminacionesMultiples.length > 0) {
 
   // Detectar intención con GPT-4o usando memoria
   const gptResult = await module.exports.procesarConGPT(pedido);
+  quierePagar = quierePagar || gptResult.intencion_pagar === true || gptResult.cierre_pedido === true;
   // Detectar intención de pagar con GPT
-if (gptResult.intencion_pagar === true) {
-  yaSeRespondio = true;
-  const link = await generarLinkPago(pedido);
-  pedido.pagado = true;
-  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\n 😉`;
-}
-if (gptResult.ofrecer_menu) {
-  return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
-}
+     if (gptResult.ofrecer_menu) {
+    return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
+  }
 
 if (gptResult.mostrar_menu) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
 }
 
-  if (gptResult.cierre_pedido) {
-    const link = await generarLinkPago(pedido);
-    pedido.pagado = true;
-    return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\n 😉`;
-  }
 // 👉 Detectar si preguntó el precio de un producto
 if (gptResult.pregunta_precio) {
   const prod = gptResult.pregunta_precio.toLowerCase();
@@ -764,19 +805,37 @@ if (gptResult.productos.length > 0) {
       }
     }
   });
-let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+   }
+if (quierePagar || pedido.solicitandoCampo) {
+  const faltan = datosFaltantes(pedido);
+  if (faltan.length) {
+    const next = faltan[0];
+    pedido.solicitandoCampo = next;
+    if (next === "nombre") return "📌 ¿Cuál es tu nombre completo?";
+    if (next === "direccion") return "📌 ¿Podés decirme la dirección de entrega?";
+    if (next === "medioPago") return "📌 ¿Con qué medio de pago vas a abonar? (efectivo o Mercado Pago)";
+  } else {
+    pedido.pagado = true;
+    pedido.solicitandoCampo = null;
+    if (pedido.medioPago === "efectivo") {
+      return `🧾 ¡Perfecto ${pedido.nombre}! Tomamos tu pedido para enviar a: ${pedido.direccion}. 💵 Pagás al recibir en efectivo. 🚚 El pedido ya está en camino 😉`;
+    } else {
+      const link = await module.exports.generarLinkPago(pedido);
+      return `🧾 ¡Perfecto ${pedido.nombre}! Te paso el link de pago: ${link}`;
+    }
+  }
+}
+  let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
+
   pedido.items.forEach(i => {
     resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
   });
   resumen += `\n💵 Total: $${pedido.total}\n`;
   resumen += "si ya terminaste de elegir, para avanzar debes indicarnos alguna nota adicional sobre el pedido si lo requieres (ej:sin cebolla), direccion, nombre completo y el medio de pago (efectivo o mercado pago)";
-
+  if (pedido.items.length === 0) return undefined;
   return resumen; // 👈 muy importante: devuelve el mensaje al usuario
 }
 
-
-
-  }
 function resumenBreve(pedido) {
   if (!pedido || !pedido.items || pedido.items.length === 0) {
     return "Pedido vacío.";
@@ -887,5 +946,5 @@ function capitalize(str) {
 if (require.main === module) {
   startBot();
 }
-module.exports = { manejarMensaje, procesarConGPT, menu };
+module.exports = { manejarMensaje, procesarConGPT, menu, generarLinkPago };
 
