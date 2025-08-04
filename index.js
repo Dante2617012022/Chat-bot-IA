@@ -482,6 +482,7 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
       return resumen;
     }
   }
+
   // Detectar frases para reiniciar el pedido o eliminar todo
   const reiniciar = /\b(?:nuevo\s+pedido|cancel(?:ar)?\s+todo|anular\s+todo|cancel(?:a)?\s+todo|anula\s+todo|desaparece\s+todo|desaparecer\s+todo|reiniciar\s+pedido|cancel(?:ar)?\s+pedido|anular\s+pedido|resetear\s+pedido|cancel(?:a|á)\s+la\s+orden|resete(?:a|á)\s+la\s+orden|resetea(?:a|r)\s+la\s+orden)\b/i;
 if (reiniciar.test(lower) || (frasesEliminarTodo.some(f => lower.includes(f)) && !/todo\s+menos/i.test(lower))) {
@@ -490,7 +491,14 @@ if (reiniciar.test(lower) || (frasesEliminarTodo.some(f => lower.includes(f)) &&
     return "Listo, empezamos un nuevo pedido. ¿Qué te gustaría pedir?";
   }
   
-     
+   // Detectar frases como "sácame las dos", "sacame los dos", etc., sin nombrar productos
+const quitarTodoMatch = lower.match(/\bsac[aá](?:me)?\s+(las|los)?\s*(dos|ambas|los dos|las dos|uno|una|tres|cuatro|cinco|1|2|3|4|5)\b/);
+if (quitarTodoMatch && pedido.items.length <= 5) {
+  pedido.items = [];
+  pedido.total = 0;
+  return "Perfecto, ya eliminé esos productos. Tu pedido está vacío por ahora. ¿Querés ver el menú?";
+}
+  
   // Detectar frases como "borra", "elimina", "saca" o "quita" seguidas de un producto
   const borrarMatch = lower.match(/\b(?:borra(?:r|me|le)?|elimina(?:r|me|le)?|quita(?:r|me|le)?|saca(?:r|me|le)?|remueve|remove)\s+(.+)/i);
   if (borrarMatch) {
