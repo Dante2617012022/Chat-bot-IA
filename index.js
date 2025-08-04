@@ -268,7 +268,7 @@ function mostrarPedido(pedido) {
     resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
   });
   resumen += `\n💵 Total: $${pedido.total}\n`;
-  resumen += "¿Querés agregar algo más o generar el link de pago?";
+resumen += "si ya terminaste de elegir, para avanzar debes indicarnos alguna nota adicional sobre el pedido si lo requieres (ej:sin cebolla), direccion, nombre completo y el medio de pago (efectivo o mercado pago)";
   return resumen;
 }
 async function startBot() {
@@ -341,7 +341,7 @@ async function manejarMensaje(text, pedido) {
     
     const saludos = [
   "hola", "hola!", "hola!!", "hola como estas", "Ola", "Olaa", "Olaaa", "olaaa", "ola", "buenas", "buenas!", "buenas noches", 
-  "buenas tardes", "buenos dias", "que tal", "cómo estás", "como estas"
+  "buenas tardes", "buenos dias", "que tal", "cómo estás", "como estas", "holis!", "holis", "holiss!", "holisss!", "olis!", "oliss!", "olisss!", "olis"
 ];
  // Saludos
 if (saludos.some(s => lower.includes(s))) {
@@ -452,7 +452,7 @@ if (palabrasHumano.some(p => lower.includes(p.toLowerCase()))) {
   "dame el menu", "Dame el menu",
   "mostrar menu", "Mostrar menu",
   "mostrar carta", "Mostrar carta",
-  "menues", "qué ofrecen", "qué tienen", "Qué tienen","Que tienen", "qué venden", "pasá la carta", "pasa el listado"
+  "menues", "qué ofrecen", "qué tienen", "Qué tienen","Que tienen", "qué venden", "pasá la carta", "pasa el listado", "Pasame", "pasame"
 ];
 if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
   return `📋 Este es nuestro menú completo:\n\n${menuToString()}`;
@@ -478,7 +478,7 @@ if (palabrasClave.some(p => lower.includes(p.toLowerCase()))) {
         resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
       });
       resumen += `\n💵 Total: $${pedido.total}\n`;
-      resumen += "¿Querés agregar algo más o generar el link de pago?";
+      resumen += "si ya terminaste de elegir, para avanzar debes indicarnos alguna nota adicional sobre el pedido si lo requieres (ej:sin cebolla), direccion, nombre completo y el medio de pago (efectivo o mercado pago)";
       return resumen;
     }
   }
@@ -548,7 +548,7 @@ const prodLower = prodTexto.toLowerCase();
           resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
         });
         resumen += `\n💵 Total: $${pedido.total}\n`;
-        resumen += "¿Querés agregar algo más o generar el link de pago?";
+        resumen += "si ya terminaste de elegir, para avanzar debes indicarnos alguna nota adicional sobre el pedido si lo requieres (ej:sin cebolla), direccion, nombre completo y el medio de pago (efectivo o mercado pago)";
         return resumen;
       }
     }
@@ -587,7 +587,7 @@ const prodLower = prodTexto.toLowerCase();
         resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
       });
       resumen += `\n💵 Total: $${pedido.total}\n`;
-      resumen += "¿Querés agregar algo más o generar el link de pago?";
+      resumen += "si ya terminaste de elegir, para avanzar debes indicarnos alguna nota adicional sobre el pedido si lo requieres (ej:sin cebolla), direccion, nombre completo y el medio de pago (efectivo o mercado pago)";
       return resumen;
     }
   }
@@ -595,7 +595,7 @@ const prodLower = prodTexto.toLowerCase();
   yaSeRespondio = true;
   const link = await generarLinkPago(pedido); // o `generarLinkDePago(pedido, sender, sock)` si usás el socket
   pedido.pagado = true;
-  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\n 😉`;
   }
 // 👇 Detección: “dejame solo 2 latas”, “dejá solamente tres nuggets”
 const mantenerSolo = parseEliminarTodoExcepto(lower);
@@ -684,7 +684,7 @@ if (gptResult.intencion_pagar === true) {
   yaSeRespondio = true;
   const link = await generarLinkPago(pedido);
   pedido.pagado = true;
-  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+  return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\n 😉`;
 }
 if (gptResult.ofrecer_menu) {
   return `${saludoDinamico(pedido)} ¿Querés que te muestre el menú completo?`;
@@ -697,7 +697,7 @@ if (gptResult.mostrar_menu) {
   if (gptResult.cierre_pedido) {
     const link = await generarLinkPago(pedido);
     pedido.pagado = true;
-    return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\nCuando completes el pago avisame y lo confirmo 😉`;
+    return `¡Perfecto! Entonces lo dejamos así. Te paso el link de pago:\n${link}\n 😉`;
   }
 // 👉 Detectar si preguntó el precio de un producto
 if (gptResult.pregunta_precio) {
@@ -769,7 +769,7 @@ let resumen = "Perfecto 👌 Tu pedido hasta ahora:\n";
     resumen += `✅ ${i.cantidad} x ${i.producto} - $${i.subtotal}\n`;
   });
   resumen += `\n💵 Total: $${pedido.total}\n`;
-  resumen += "¿Querés agregar algo más o generar el link de pago?";
+  resumen += "si ya terminaste de elegir, para avanzar debes indicarnos alguna nota adicional sobre el pedido si lo requieres (ej:sin cebolla), direccion, nombre completo y el medio de pago (efectivo o mercado pago)";
 
   return resumen; // 👈 muy importante: devuelve el mensaje al usuario
 }

@@ -70,6 +70,23 @@ async function run() {
   assert.strictEqual(pedido3.items.length, 1);
   assert.strictEqual(pedido3.items[0].producto, 'Onion simple');
   console.log('Test passed: Onion items kept');
+   // Caso 4: "Sácame las dos" vacía el pedido
+  const pedido4 = {
+    cliente: 'tester4',
+    items: [
+      { producto: 'Cuarto A simple', cantidad: 1, precio_unitario: menu['Cuarto A simple'], subtotal: menu['Cuarto A simple'] },
+      { producto: 'Triple l simple', cantidad: 1, precio_unitario: menu['Triple l simple'], subtotal: menu['Triple l simple'] }
+    ],
+    total: menu['Cuarto A simple'] + menu['Triple l simple'],
+    historial: [],
+    interacciones: 0,
+    pagado: false
+  };
+
+  await bot.manejarMensaje('Sácame las dos', pedido4);
+  assert.strictEqual(pedido4.items.length, 0);
+  assert.strictEqual(pedido4.total, 0);
+  console.log('Test passed: "Sácame las dos" removes all items');
 }
 
 run();
