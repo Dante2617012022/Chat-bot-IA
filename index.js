@@ -492,7 +492,7 @@ if (reiniciar.test(lower) || (frasesEliminarTodo.some(f => lower.includes(f)) &&
   }
   
    // Detectar frases como "sácame las dos", "sacame los dos", etc., sin nombrar productos
-const quitarTodoMatch = lower.match(/\bsac[aá](?:me)?\s+(las|los)?\s*(dos|ambas|los dos|las dos|uno|una|tres|cuatro|cinco|1|2|3|4|5)\b/);
+const quitarTodoMatch = lower.match(/\bs[áa]c[aá](?:me)?\s+(las|los)?\s*(dos|ambas|los dos|las dos|uno|una|tres|cuatro|cinco|1|2|3|4|5)\b/);
 if (quitarTodoMatch && pedido.items.length <= 5) {
   pedido.items = [];
   pedido.total = 0;
